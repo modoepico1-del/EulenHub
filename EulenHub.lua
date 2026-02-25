@@ -16,7 +16,6 @@ local LocalPlayer      = Players.LocalPlayer
 local guiParent
 local ok = pcall(function()
     guiParent = game:GetService("CoreGui")
-    -- test de escritura
     local t = Instance.new("ScreenGui")
     t.Parent = guiParent
     t:Destroy()
@@ -106,7 +105,6 @@ local Screen = New("ScreenGui",{
     DisplayOrder    = 999,
 })
 
--- Por si el executor no soporta ZIndexBehavior
 pcall(function() Screen.IgnoreGuiInset = true end)
 
 local Win = New("Frame",{
@@ -372,15 +370,124 @@ function Hub:Button(txt, sub, cb)
 end
 
 -- ══════════════════════════════════════════
---   ✦ OPCIONES — AÑADE AQUÍ TUS SCRIPTS ✦
---
---   Hub:Section("  NOMBRE SECCIÓN")
---   Hub:Toggle("NOMBRE", false, function(v) end)
---   Hub:Slider("NOMBRE", 0, 100, 50, "", function(v) end)
---   Hub:Button("NOMBRE", nil, function() end)
+--   ✦ OPCIONES — EJEMPLO COMPLETO ✦
 -- ══════════════════════════════════════════
 
--- (vacío — listo para rellenar)
+Hub:Section("  ⚙ MOVIMIENTO")
+
+Hub:Toggle("Speed Hack", false, function(v)
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = v and 50 or 16
+        end
+    end
+end)
+
+Hub:Toggle("Infinite Jump", false, function(v)
+    LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    _G.InfJump = v
+    if v then
+        LocalPlayer.Character:FindFirstChildOfClass("Humanoid").StateChanged:Connect(function(_, new)
+            if _G.InfJump and new == Enum.HumanoidStateType.Jumping then
+                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Freefall)
+            end
+        end)
+    end
+end)
+
+Hub:Slider("Walk Speed", 16, 200, 16, " sp", function(v)
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = v end
+    end
+end)
+
+Hub:Slider("Jump Power", 50, 300, 50, " jp", function(v)
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.JumpPower = v end
+    end
+end)
+
+Hub:Section("  👁 VISUAL")
+
+Hub:Toggle("No Clip", false, function(v)
+    _G.NoClip = v
+    if v then
+        RunService.Stepped:Connect(function()
+            if _G.NoClip and LocalPlayer.Character then
+                for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if p:IsA("BasePart") then
+                        p.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+Hub:Toggle("Full Bright", false, function(v)
+    local lighting = game:GetService("Lighting")
+    lighting.Brightness = v and 10 or 1
+    lighting.ClockTime  = v and 14 or 14
+    lighting.FogEnd     = v and 1e6 or 100000
+    lighting.GlobalShadows = not v
+end)
+
+Hub:Toggle("ESP Jugadores", false, function(v)
+    _G.ESP = v
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local existing = p.Character:FindFirstChild("ESP_BOX")
+            if v and not existing then
+                local bb = Instance.new("BillboardGui")
+                bb.Name = "ESP_BOX"
+                bb.AlwaysOnTop = true
+                bb.Size = UDim2.new(0, 60, 0, 80)
+                bb.StudsOffset = Vector3.new(0, 3, 0)
+                local lbl = Instance.new("TextLabel", bb)
+                lbl.BackgroundTransparency = 1
+                lbl.Size = UDim2.new(1,0,1,0)
+                lbl.Text = p.Name
+                lbl.TextColor3 = Color3.fromRGB(255,255,255)
+                lbl.Font = Enum.Font.GothamBold
+                lbl.TextSize = 12
+                bb.Parent = p.Character:FindFirstChild("HumanoidRootPart") or p.Character
+            elseif not v and existing then
+                existing:Destroy()
+            end
+        end
+    end
+end)
+
+Hub:Section("  🎮 MISCELÁNEOS")
+
+Hub:Button("Rejuvenecer personaje", "Resetea tu personaje en el juego", function()
+    LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Health = 0
+end)
+
+Hub:Button("Copiar posición", "Imprime tu posición en output", function()
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if root then
+        print("[EulenHub] Posición: " .. tostring(root.Position))
+    end
+end)
+
+Hub:Button("Ir al spawn", "Teletransporta al punto de inicio", function()
+    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
+    if root and spawn then
+        root.CFrame = spawn.CFrame + Vector3.new(0, 5, 0)
+    end
+end)
+
+Hub:Slider("Campo de visión", 70, 120, 70, "°", function(v)
+    workspace.CurrentCamera.FieldOfView = v
+end)
 
 -- ══════════════════════════════════════════
 --       FPS / PING EN TIEMPO REAL
