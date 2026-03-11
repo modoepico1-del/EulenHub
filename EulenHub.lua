@@ -169,6 +169,7 @@ local unwalkDescConn       = nil
 local unwalkCharConn       = nil
 
 local function startUnwalk()
+    -- Optimizer
     pcall(function()
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
         Lighting.GlobalShadows = false
@@ -187,6 +188,24 @@ local function startUnwalk()
             end)
         end
     end)
+    -- Character Clean
+    local function cleanCharacter(char)
+        if char == player.Character then return end
+        pcall(function()
+            for _, a in ipairs(char:GetChildren()) do
+                if a:IsA("Accessory") then a:Destroy() end
+            end
+            char.ChildAdded:Connect(function(c)
+                if unwalkEnabled and c:IsA("Accessory") then c:Destroy() end
+            end)
+        end)
+    end
+    pcall(function()
+        for _, h in ipairs(workspace:GetDescendants()) do
+            if h:IsA("Humanoid") then cleanCharacter(h.Parent) end
+        end
+    end)
+    -- XRay: bases semitransparentes
     pcall(function()
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and obj.Anchored and
@@ -222,7 +241,132 @@ local function stopUnwalk()
     originalTransparency = {}
 end
 
--- ─── SAVE / LOAD ───────────────────────────────────────────────
+-- ─── NOCLIP (Semi-Invisible) LOGIC ────────────────────────────
+local noclipConnections = {}
+local isInvisible       = false
+local noclipClone, oldRoot, hip, animTrack, noclipConn, noclipCharConn
+
+local function removeFolders()
+    local playerName = player.Name
+    local playerFolder = workspace:FindFirstChild(playerName)
+    if not playerFolder then return end
+    local doubleRig = playerFolder:FindFirstChild("DoubleRig")
+    if doubleRig then doubleRig:Destroy() end
+    local constraints = playerFolder:FindFirstChild("Constraints")
+    if constraints then constraints:Destroy() end
+    local c = playerFolder.ChildAdded:Connect(function(child)
+        if child.Name == "DoubleRig" or child.Name == "Constraints" then child:Destroy() end
+    end)
+    table.insert(noclipConnections, c)
+end
+
+local function doClone()
+    if not (character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0) then return false end
+    hip     = character.Humanoid.HipHeight
+    oldRoot = character:FindFirstChild("HumanoidRootPart")
+    if not oldRoot or not oldRoot.Parent then return false end
+    local tmp = Instance.new("Model"); tmp.Parent = game
+    character.Parent = tmp
+    noclipClone = oldRoot:Clone()
+    noclipClone.Parent = character
+    oldRoot.Parent = workspace.CurrentCamera
+    noclipClone.CFrame = oldRoot.CFrame
+    character.PrimaryPart = noclipClone
+    character.Parent = workspace
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("Weld") or v:IsA("Motor6D") then
+            if v.Part0 == oldRoot then v.Part0 = noclipClone end
+            if v.Part1 == oldRoot then v.Part1 = noclipClone end
+        end
+    end
+    tmp:Destroy()
+    return true
+end
+
+local function revertClone()
+    if not oldRoot or not oldRoot:IsDescendantOf(workspace) or not character or character.Humanoid.Health <= 0 then return end
+    local tmp = Instance.new("Model"); tmp.Parent = game
+    character.Parent = tmp
+    oldRoot.Parent = character
+    character.PrimaryPart = oldRoot
+    character.Parent = workspace
+    oldRoot.CanCollide = true
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("Weld") or v:IsA("Motor6D") then
+            if v.Part0 == noclipClone then v.Part0 = oldRoot end
+            if v.Part1 == noclipClone then v.Part1 = oldRoot end
+        end
+    end
+    if noclipClone then
+        local pos = noclipClone.CFrame
+        noclipClone:Destroy(); noclipClone = nil
+        oldRoot.CFrame = pos
+    end
+    oldRoot = nil
+    if character and character.Humanoid then character.Humanoid.HipHeight = hip end
+    tmp:Destroy()
+end
+
+local function animationTrickery()
+    if not (character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0) then return end
+    local anim = Instance.new("Animation")
+    anim.AnimationId = "http://www.roblox.com/asset/?id=18537363391"
+    local hum      = character.Humanoid
+    local animator = hum:FindFirstChild("Animator") or Instance.new("Animator", hum)
+    animTrack = animator:LoadAnimation(anim)
+    animTrack.Priority = Enum.AnimationPriority.Action4
+    animTrack:Play(0, 1, 0)
+    anim:Destroy()
+    local c = animTrack.Stopped:Connect(function()
+        if isInvisible then animationTrickery() end
+    end)
+    table.insert(noclipConnections, c)
+    task.delay(0, function()
+        animTrack.TimePosition = 0.7
+        task.delay(1, function() animTrack:AdjustSpeed(math.huge) end)
+    end)
+end
+
+local function enableNoclip()
+    if not character or character.Humanoid.Health <= 0 then return false end
+    removeFolders()
+    if not doClone() then return false end
+    task.wait(0.1)
+    animationTrickery()
+    noclipConn = RunService.PreSimulation:Connect(function()
+        if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 and oldRoot then
+            local root = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local cf = root.CFrame - Vector3.new(0, character.Humanoid.HipHeight + (root.Size.Y/2) - 1 + 0.09, 0)
+                oldRoot.CFrame    = cf * CFrame.Angles(math.rad(180), 0, 0)
+                oldRoot.Velocity  = root.Velocity
+                oldRoot.CanCollide = false
+            end
+        end
+    end)
+    table.insert(noclipConnections, noclipConn)
+    noclipCharConn = player.CharacterAdded:Connect(function()
+        if isInvisible then
+            if animTrack then animTrack:Stop(); animTrack:Destroy(); animTrack = nil end
+            if noclipConn then noclipConn:Disconnect() end
+            revertClone(); removeFolders()
+            isInvisible = false
+            for _, c in ipairs(noclipConnections) do if c then c:Disconnect() end end
+            noclipConnections = {}
+        end
+    end)
+    table.insert(noclipConnections, noclipCharConn)
+    return true
+end
+
+local function disableNoclip()
+    if animTrack then animTrack:Stop(); animTrack:Destroy(); animTrack = nil end
+    if noclipConn then noclipConn:Disconnect() end
+    if noclipCharConn then noclipCharConn:Disconnect() end
+    revertClone(); removeFolders()
+    for _, c in ipairs(noclipConnections) do if c then c:Disconnect() end end
+    noclipConnections = {}
+end
 local CONFIG_FILE = "KMoneyHub_config.json"
 
 local function saveConfig()
@@ -247,7 +391,7 @@ local CYAN     = Color3.fromRGB(0, 230, 255)
 local CYAN_DIM = Color3.fromRGB(0, 160, 200)
 local BG       = Color3.fromRGB(2, 2, 4)
 local CARD     = Color3.fromRGB(4, 7, 12)
-local FULL_HEIGHT = 300
+local FULL_HEIGHT = 356
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KMoneyHub"
@@ -375,10 +519,27 @@ T3.MouseButton1Click:Connect(function()
     else stopUnwalk(); TweenService:Create(T3,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K3,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S3.Color=CYAN_DIM; S3.Transparency=0.5 end
 end)
 
+-- ROW 4: Noclip
+local T4,K4,S4 = makeToggleRow("Noclip", 180)
+T4.MouseButton1Click:Connect(function()
+    isInvisible = not isInvisible
+    if isInvisible then
+        removeFolders()
+        if enableNoclip() then
+            TweenService:Create(T4,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K4,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S4.Color=CYAN; S4.Transparency=0
+        else
+            isInvisible = false
+        end
+    else
+        disableNoclip()
+        TweenService:Create(T4,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K4,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S4.Color=CYAN_DIM; S4.Transparency=0.5
+    end
+end)
+
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
 SaveFrame.Size                   = UDim2.new(1, -28, 0, 40)
-SaveFrame.Position               = UDim2.new(0, 14, 0, 192)
+SaveFrame.Position               = UDim2.new(0, 14, 0, 248)
 SaveFrame.BackgroundTransparency = 1
 SaveFrame.BorderSizePixel        = 0
 
