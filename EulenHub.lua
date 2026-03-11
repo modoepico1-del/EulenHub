@@ -254,15 +254,16 @@ end
 local savedCfg = {}
 pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 
--- ─── COLORES GALAXY ────────────────────────────────────────────
-local PURPLE     = Color3.fromRGB(140, 60, 255)
-local PURPLE_DIM = Color3.fromRGB(80, 30, 160)
-local PINK       = Color3.fromRGB(200, 80, 255)
-local BG         = Color3.fromRGB(4, 2, 10)
-local CARD       = Color3.fromRGB(8, 4, 18)
-local CARD2      = Color3.fromRGB(12, 6, 24)
-local WHITE      = Color3.fromRGB(220, 200, 255)
-local FULL_HEIGHT = 310
+-- ─── COLORES GRIM REAPER ───────────────────────────────────────
+local BLACK      = Color3.fromRGB(4, 4, 4)
+local DARKGRAY   = Color3.fromRGB(12, 12, 14)
+local CARD       = Color3.fromRGB(10, 10, 12)
+local CARD2      = Color3.fromRGB(16, 16, 18)
+local GHOST      = Color3.fromRGB(220, 220, 230)
+local GHOSTDIM   = Color3.fromRGB(140, 140, 155)
+local RED        = Color3.fromRGB(180, 20, 20)
+local REDDIM     = Color3.fromRGB(100, 10, 10)
+local FULL_HEIGHT = 315
 
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
@@ -279,91 +280,82 @@ pcall(function() ScreenGui.Parent = CoreGui end)
 local Main = Instance.new("Frame", ScreenGui)
 Main.Name             = "Main"
 Main.Size             = UDim2.new(0, 270, 0, FULL_HEIGHT)
-Main.Position         = UDim2.new(0.5, -135, 0.5, -155)
-Main.BackgroundColor3 = BG
+Main.Position         = UDim2.new(0.5, -135, 0.5, -157)
+Main.BackgroundColor3 = BLACK
 Main.BorderSizePixel  = 0
 Main.ClipsDescendants = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
--- Galaxy gradient background
-local UIGrad = Instance.new("UIGradient", Main)
-UIGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(6, 2, 16)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(4, 2, 12)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 3, 20)),
-})
-UIGrad.Rotation = 135
+-- Outer stroke - blood red
+local grimStroke = Instance.new("UIStroke", Main)
+grimStroke.Color     = RED
+grimStroke.Thickness = 1.5
 
--- Outer glow stroke
-local galaxyStroke = Instance.new("UIStroke", Main)
-galaxyStroke.Color     = PURPLE
-galaxyStroke.Thickness = 1.5
-
--- Stars decoration
-for i = 1, 18 do
-    local star = Instance.new("Frame", Main)
-    star.Size             = UDim2.new(0, math.random(1,2), 0, math.random(1,2))
-    star.Position         = UDim2.new(math.random(0,95)/100, 0, math.random(0,95)/100, 0)
-    star.BackgroundColor3 = Color3.fromRGB(255, 240, 255)
-    star.BorderSizePixel  = 0
-    star.ZIndex           = 1
-    Instance.new("UICorner", star).CornerRadius = UDim.new(1, 0)
-    -- Twinkle
+-- Skull decorations (floating in background)
+local SKULLS = {"💀", "💀", "💀", "💀", "💀"}
+for i, sk in ipairs(SKULLS) do
+    local skLbl = Instance.new("TextLabel", Main)
+    skLbl.Size                   = UDim2.new(0, 20, 0, 20)
+    skLbl.Position               = UDim2.new(math.random(5,88)/100, 0, math.random(5,88)/100, 0)
+    skLbl.BackgroundTransparency = 1
+    skLbl.Text                   = sk
+    skLbl.TextSize               = math.random(10,14)
+    skLbl.Font                   = Enum.Font.GothamBold
+    skLbl.TextTransparency       = 0.75
+    skLbl.ZIndex                 = 1
+    -- Float animation
     task.spawn(function()
-        local delay = math.random(0, 30) / 10
-        task.wait(delay)
+        task.wait(math.random(0,20)/10)
         while ScreenGui.Parent do
-            TweenService:Create(star, TweenInfo.new(math.random(8,18)/10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = 0.85}):Play()
-            task.wait(math.random(15,30)/10)
+            TweenService:Create(skLbl, TweenInfo.new(2+math.random(0,10)/5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+                TextTransparency = 0.4,
+                Position = UDim2.new(skLbl.Position.X.Scale, 0, skLbl.Position.Y.Scale - 0.04, 0)
+            }):Play()
+            task.wait(4)
         end
     end)
 end
 
--- Top shimmer line
+-- Top blood line
 local TopLine = Instance.new("Frame", Main)
-TopLine.Size  = UDim2.new(1, 0, 0, 2)
-TopLine.BackgroundColor3 = PURPLE
+TopLine.Size             = UDim2.new(1, 0, 0, 2)
+TopLine.BackgroundColor3 = RED
 TopLine.BorderSizePixel  = 0
 Instance.new("UIGradient", TopLine).Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(80,30,160)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200,80,255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(80,30,160)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(40,0,0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200,20,20)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(40,0,0)),
 })
 
 -- Title bar
 local TitleBar = Instance.new("Frame", Main)
-TitleBar.Size             = UDim2.new(1, 0, 0, 46)
+TitleBar.Size             = UDim2.new(1, 0, 0, 48)
 TitleBar.Position         = UDim2.new(0, 0, 0, 2)
-TitleBar.BackgroundColor3 = CARD
+TitleBar.BackgroundColor3 = DARKGRAY
 TitleBar.BorderSizePixel  = 0
-
-local TitleGrad = Instance.new("UIGradient", TitleBar)
-TitleGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(12, 5, 28)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(6, 3, 14)),
+Instance.new("UIGradient", TitleBar).Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(16,14,14)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(6,6,6)),
 })
-TitleGrad.Rotation = 90
 
--- Galaxy icon (✦)
-local IconLbl = Instance.new("TextLabel", TitleBar)
-IconLbl.Size                   = UDim2.new(0, 22, 1, 0)
-IconLbl.Position               = UDim2.new(0, 10, 0, 0)
-IconLbl.BackgroundTransparency = 1
-IconLbl.Text                   = "$"
-IconLbl.TextColor3             = PINK
-IconLbl.Font                   = Enum.Font.GothamBlack
-IconLbl.TextSize               = 16
-IconLbl.TextStrokeColor3       = PINK
-IconLbl.TextStrokeTransparency = 0.4
+-- Skull icon left
+local SkullIcon = Instance.new("TextLabel", TitleBar)
+SkullIcon.Size                   = UDim2.new(0, 28, 1, 0)
+SkullIcon.Position               = UDim2.new(0, 8, 0, 0)
+SkullIcon.BackgroundTransparency = 1
+SkullIcon.Text                   = "💀"
+SkullIcon.TextSize               = 16
+SkullIcon.Font                   = Enum.Font.GothamBold
 
+-- Title label
 local TitleLbl = Instance.new("TextLabel", TitleBar)
 TitleLbl.Size                   = UDim2.new(1, -80, 1, 0)
-TitleLbl.Position               = UDim2.new(0, 36, 0, 0)
+TitleLbl.Position               = UDim2.new(0, 40, 0, 0)
 TitleLbl.BackgroundTransparency = 1
 TitleLbl.Text                   = "KMONEY HUB"
-TitleLbl.TextColor3             = WHITE
-TitleLbl.TextStrokeColor3       = PURPLE
-TitleLbl.TextStrokeTransparency = 0.3
+TitleLbl.TextColor3             = GHOST
+TitleLbl.TextStrokeColor3       = RED
+TitleLbl.TextStrokeTransparency = 0.2
 TitleLbl.Font                   = Enum.Font.GothamBlack
 TitleLbl.TextSize               = 16
 TitleLbl.TextXAlignment         = Enum.TextXAlignment.Left
@@ -372,140 +364,151 @@ TitleLbl.TextXAlignment         = Enum.TextXAlignment.Left
 local MinBtn = Instance.new("TextButton", TitleBar)
 MinBtn.Size                   = UDim2.new(0, 26, 0, 26)
 MinBtn.Position               = UDim2.new(1, -36, 0.5, -13)
-MinBtn.BackgroundColor3       = CARD2
+MinBtn.BackgroundColor3       = CARD
 MinBtn.Text                   = "—"
-MinBtn.TextColor3             = PURPLE
+MinBtn.TextColor3             = GHOSTDIM
 MinBtn.Font                   = Enum.Font.GothamBold
 MinBtn.TextSize               = 13
 MinBtn.BorderSizePixel        = 0
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 local minStroke = Instance.new("UIStroke", MinBtn)
-minStroke.Color = PURPLE_DIM; minStroke.Thickness = 1; minStroke.Transparency = 0.5
+minStroke.Color = REDDIM; minStroke.Thickness = 1; minStroke.Transparency = 0.4
 
 -- Content
 local Content = Instance.new("Frame", Main)
-Content.Size                   = UDim2.new(1, 0, 1, -50)
-Content.Position               = UDim2.new(0, 0, 0, 50)
+Content.Size                   = UDim2.new(1, 0, 1, -52)
+Content.Position               = UDim2.new(0, 0, 0, 52)
 Content.BackgroundTransparency = 1
 
 local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
 
--- ─── HELPER: toggle row ────────────────────────────────────────
-local function makeToggleRow(labelText, icon, yOffset)
+-- ─── TOGGLE ROW HELPER ─────────────────────────────────────────
+local function makeToggleRow(labelText, yOffset)
     local Row = Instance.new("Frame", Content)
     Row.Size             = UDim2.new(1, -24, 0, 46)
     Row.Position         = UDim2.new(0, 12, 0, yOffset)
     Row.BackgroundColor3 = CARD
     Row.BorderSizePixel  = 0
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 8)
 
-    local rowGrad = Instance.new("UIGradient", Row)
-    rowGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(14, 6, 30)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 4, 18)),
+    Instance.new("UIGradient", Row).Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(16,14,14)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(8,8,8)),
     })
-    rowGrad.Rotation = 90
 
     local rowStroke = Instance.new("UIStroke", Row)
-    rowStroke.Color = PURPLE_DIM; rowStroke.Thickness = 1; rowStroke.Transparency = 0.6
+    rowStroke.Color = REDDIM; rowStroke.Thickness = 1; rowStroke.Transparency = 0.6
 
-    -- Icon
-    local IcoLbl = Instance.new("TextLabel", Row)
-    IcoLbl.Size = UDim2.new(0,22,1,0); IcoLbl.Position = UDim2.new(0,10,0,0)
-    IcoLbl.BackgroundTransparency = 1; IcoLbl.Text = icon
-    IcoLbl.TextColor3 = PURPLE; IcoLbl.Font = Enum.Font.GothamBold
-    IcoLbl.TextSize = 14
+    -- Skull left of label
+    local SkLbl = Instance.new("TextLabel", Row)
+    SkLbl.Size = UDim2.new(0,22,1,0); SkLbl.Position = UDim2.new(0,10,0,0)
+    SkLbl.BackgroundTransparency = 1; SkLbl.Text = "💀"
+    SkLbl.TextSize = 12; SkLbl.Font = Enum.Font.GothamBold
+    SkLbl.TextTransparency = 0.3
 
     local Lbl = Instance.new("TextLabel", Row)
-    Lbl.Size = UDim2.new(1,-70,1,0); Lbl.Position = UDim2.new(0,14,0,0)
+    Lbl.Size = UDim2.new(1,-70,1,0); Lbl.Position = UDim2.new(0,36,0,0)
     Lbl.BackgroundTransparency = 1; Lbl.Text = labelText
-    Lbl.TextColor3 = WHITE; Lbl.Font = Enum.Font.GothamBold
+    Lbl.TextColor3 = GHOST; Lbl.Font = Enum.Font.GothamBold
     Lbl.TextSize = 13; Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local Btn = Instance.new("TextButton", Row)
     Btn.Size = UDim2.new(0,46,0,24); Btn.Position = UDim2.new(1,-56,0.5,-12)
-    Btn.BackgroundColor3 = Color3.fromRGB(8,4,18); Btn.Text = ""; Btn.BorderSizePixel = 0
+    Btn.BackgroundColor3 = Color3.fromRGB(8,8,10); Btn.Text = ""; Btn.BorderSizePixel = 0
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
     local bStroke = Instance.new("UIStroke", Btn)
-    bStroke.Color = PURPLE_DIM; bStroke.Thickness = 1; bStroke.Transparency = 0.5
+    bStroke.Color = REDDIM; bStroke.Thickness = 1; bStroke.Transparency = 0.5
 
     local Knob = Instance.new("Frame", Btn)
     Knob.Size = UDim2.new(0,18,0,18); Knob.Position = UDim2.new(0,3,0.5,-9)
-    Knob.BackgroundColor3 = Color3.fromRGB(60,30,90); Knob.BorderSizePixel = 0
+    Knob.BackgroundColor3 = Color3.fromRGB(50,50,55); Knob.BorderSizePixel = 0
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1,0)
 
     return Btn, Knob, bStroke, rowStroke
 end
 
 local function applyOn(b,k,s,rs)
-    b.BackgroundColor3 = PURPLE
+    b.BackgroundColor3 = RED
     k.Position         = UDim2.new(1,-21,0.5,-9)
-    k.BackgroundColor3 = Color3.fromRGB(255,255,255)
-    s.Color = PURPLE; s.Transparency = 0
-    rs.Color = PURPLE; rs.Transparency = 0.2
+    k.BackgroundColor3 = GHOST
+    s.Color = RED; s.Transparency = 0
+    rs.Color = RED; rs.Transparency = 0.2
 end
 
 local function applyOff(b,k,s,rs)
-    b.BackgroundColor3 = Color3.fromRGB(8,4,18)
+    b.BackgroundColor3 = Color3.fromRGB(8,8,10)
     k.Position         = UDim2.new(0,3,0.5,-9)
-    k.BackgroundColor3 = Color3.fromRGB(60,30,90)
-    s.Color = PURPLE_DIM; s.Transparency = 0.5
-    rs.Color = PURPLE_DIM; rs.Transparency = 0.6
+    k.BackgroundColor3 = Color3.fromRGB(50,50,55)
+    s.Color = REDDIM; s.Transparency = 0.5
+    rs.Color = REDDIM; rs.Transparency = 0.6
 end
 
 -- ROW 1: Auto Steal
-local T1,K1,S1,RS1 = makeToggleRow("Auto Steal", "", 10)
+local T1,K1,S1,RS1 = makeToggleRow("Auto Steal", 10)
 if savedCfg.AutoSteal then stealEnabled=true; startAutoSteal(); applyOn(T1,K1,S1,RS1) end
 T1.MouseButton1Click:Connect(function()
     stealEnabled = not stealEnabled
     if stealEnabled then
         startAutoSteal()
-        TweenService:Create(T1,ti,{BackgroundColor3=PURPLE}):Play()
-        TweenService:Create(K1,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play()
-        S1.Color=PURPLE; S1.Transparency=0; RS1.Color=PURPLE; RS1.Transparency=0.2
+        TweenService:Create(T1,ti,{BackgroundColor3=RED}):Play()
+        TweenService:Create(K1,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=GHOST}):Play()
+        S1.Color=RED; S1.Transparency=0; RS1.Color=RED; RS1.Transparency=0.2
     else
         stopAutoSteal()
-        TweenService:Create(T1,ti,{BackgroundColor3=Color3.fromRGB(8,4,18)}):Play()
-        TweenService:Create(K1,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(60,30,90)}):Play()
-        S1.Color=PURPLE_DIM; S1.Transparency=0.5; RS1.Color=PURPLE_DIM; RS1.Transparency=0.6
+        TweenService:Create(T1,ti,{BackgroundColor3=Color3.fromRGB(8,8,10)}):Play()
+        TweenService:Create(K1,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,50,55)}):Play()
+        S1.Color=REDDIM; S1.Transparency=0.5; RS1.Color=REDDIM; RS1.Transparency=0.6
     end
 end)
 
 -- ROW 2: Anti Ragdoll
-local T2,K2,S2,RS2 = makeToggleRow("Anti Ragdoll", "", 66)
+local T2,K2,S2,RS2 = makeToggleRow("Anti Ragdoll", 66)
 if savedCfg.AntiRagdoll then antiRagdollEnabled=true; task.delay(1,function() setupAntiRagdoll(character) end); applyOn(T2,K2,S2,RS2) end
 T2.MouseButton1Click:Connect(function()
     antiRagdollEnabled = not antiRagdollEnabled
     if antiRagdollEnabled then
         task.wait(0.5); setupAntiRagdoll(character)
-        TweenService:Create(T2,ti,{BackgroundColor3=PURPLE}):Play()
-        TweenService:Create(K2,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play()
-        S2.Color=PURPLE; S2.Transparency=0; RS2.Color=PURPLE; RS2.Transparency=0.2
+        TweenService:Create(T2,ti,{BackgroundColor3=RED}):Play()
+        TweenService:Create(K2,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=GHOST}):Play()
+        S2.Color=RED; S2.Transparency=0; RS2.Color=RED; RS2.Transparency=0.2
     else
         cleanupRagdoll(); disconnectRemote()
-        TweenService:Create(T2,ti,{BackgroundColor3=Color3.fromRGB(8,4,18)}):Play()
-        TweenService:Create(K2,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(60,30,90)}):Play()
-        S2.Color=PURPLE_DIM; S2.Transparency=0.5; RS2.Color=PURPLE_DIM; RS2.Transparency=0.6
+        TweenService:Create(T2,ti,{BackgroundColor3=Color3.fromRGB(8,8,10)}):Play()
+        TweenService:Create(K2,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,50,55)}):Play()
+        S2.Color=REDDIM; S2.Transparency=0.5; RS2.Color=REDDIM; RS2.Transparency=0.6
     end
 end)
 
 -- ROW 3: XRAY
-local T3,K3,S3,RS3 = makeToggleRow("XRAY", "", 122)
+local T3,K3,S3,RS3 = makeToggleRow("XRAY", 122)
 if savedCfg.XRAY then unwalkEnabled=true; startUnwalk(); applyOn(T3,K3,S3,RS3) end
 T3.MouseButton1Click:Connect(function()
     unwalkEnabled = not unwalkEnabled
     if unwalkEnabled then
         startUnwalk()
-        TweenService:Create(T3,ti,{BackgroundColor3=PURPLE}):Play()
-        TweenService:Create(K3,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play()
-        S3.Color=PURPLE; S3.Transparency=0; RS3.Color=PURPLE; RS3.Transparency=0.2
+        TweenService:Create(T3,ti,{BackgroundColor3=RED}):Play()
+        TweenService:Create(K3,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=GHOST}):Play()
+        S3.Color=RED; S3.Transparency=0; RS3.Color=RED; RS3.Transparency=0.2
     else
         stopUnwalk()
-        TweenService:Create(T3,ti,{BackgroundColor3=Color3.fromRGB(8,4,18)}):Play()
-        TweenService:Create(K3,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(60,30,90)}):Play()
-        S3.Color=PURPLE_DIM; S3.Transparency=0.5; RS3.Color=PURPLE_DIM; RS3.Transparency=0.6
+        TweenService:Create(T3,ti,{BackgroundColor3=Color3.fromRGB(8,8,10)}):Play()
+        TweenService:Create(K3,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,50,55)}):Play()
+        S3.Color=REDDIM; S3.Transparency=0.5; RS3.Color=REDDIM; RS3.Transparency=0.6
     end
 end)
+
+-- ─── SEPARATOR ─────────────────────────────────────────────────
+local Sep = Instance.new("Frame", Content)
+Sep.Size             = UDim2.new(1, -24, 0, 1)
+Sep.Position         = UDim2.new(0, 12, 0, 188)
+Sep.BackgroundColor3 = RED
+Sep.BorderSizePixel  = 0
+Sep.BackgroundTransparency = 0.5
+Instance.new("UIGradient", Sep).Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180,20,20)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0)),
+})
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
@@ -515,39 +518,25 @@ SaveFrame.BackgroundTransparency = 1
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
 SaveBtn.Size             = UDim2.new(1, 0, 1, 0)
-SaveBtn.BackgroundColor3 = PURPLE
-SaveBtn.Text             = "$  SAVE CONFIG  $"
+SaveBtn.BackgroundColor3 = REDDIM
+SaveBtn.Text             = "💀  SAVE CONFIG  💀"
 SaveBtn.Font             = Enum.Font.GothamBlack
 SaveBtn.TextSize         = 13
-SaveBtn.TextColor3       = Color3.fromRGB(255, 240, 255)
+SaveBtn.TextColor3       = GHOST
 SaveBtn.BorderSizePixel  = 0
-Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 10)
-local saveGrad = Instance.new("UIGradient", SaveBtn)
-saveGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(120,40,220)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180,60,255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(120,40,220)),
+Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 8)
+Instance.new("UIGradient", SaveBtn).Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80,8,8)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(160,16,16)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80,8,8)),
 })
 
 SaveBtn.MouseButton1Click:Connect(function()
     saveConfig()
-    SaveBtn.Text = "$  SAVED!  $"
+    SaveBtn.Text = "💀  SAVED!  💀"
     task.wait(1)
-    SaveBtn.Text = "$  SAVE CONFIG  $"
+    SaveBtn.Text = "💀  SAVE CONFIG  💀"
 end)
-
--- ─── SEPARATOR LINE ────────────────────────────────────────────
-local Sep = Instance.new("Frame", Content)
-Sep.Size             = UDim2.new(1, -24, 0, 1)
-Sep.Position         = UDim2.new(0, 12, 0, 186)
-Sep.BackgroundColor3 = PURPLE_DIM
-Sep.BorderSizePixel  = 0
-Sep.BackgroundTransparency = 0.6
-Instance.new("UIGradient", Sep).Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140,60,255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0)),
-})
 
 -- ─── DRAGGABLE ─────────────────────────────────────────────────
 do
@@ -574,42 +563,166 @@ MinBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     MinBtn.Text = minimized and "+" or "—"
     TweenService:Create(Main, TweenInfo.new(0.22, Enum.EasingStyle.Quad), {
-        Size = minimized and UDim2.new(0,270,0,50) or UDim2.new(0,270,0,FULL_HEIGHT)
+        Size = minimized and UDim2.new(0,270,0,52) or UDim2.new(0,270,0,FULL_HEIGHT)
     }):Play()
 end)
 
--- ─── GALAXY PULSE ──────────────────────────────────────────────
+-- ─── GRIM PULSE (rojo sangriento pulsando) ─────────────────────
 task.spawn(function()
     local t = 0
     while ScreenGui.Parent do
         t = t + 0.04
         local pulse = (math.sin(t) + 1) / 2
-        galaxyStroke.Transparency = 0.1 + pulse * 0.6
-        galaxyStroke.Color = Color3.fromRGB(
-            140 + math.floor(pulse * 60),
-            30 + math.floor(pulse * 30),
-            255
+        grimStroke.Transparency = 0.05 + pulse * 0.65
+        grimStroke.Color = Color3.fromRGB(
+            120 + math.floor(pulse * 80),
+            10 + math.floor(pulse * 10),
+            10
+        )
+        -- Title flicker
+        TitleLbl.TextStrokeTransparency = 0.1 + pulse * 0.5
+        TitleLbl.TextColor3 = Color3.fromRGB(
+            200 + math.floor(pulse * 20),
+            200 + math.floor(pulse * 20),
+            210 + math.floor(pulse * 20)
         )
         task.wait(0.03)
     end
 end)
 
 
--- ─── TITLE SHIMMER ─────────────────────────────────────────────
+-- ─── GUADAÑA (fuera del hub, a la izquierda) ──────────────────
+local ScytheFrame = Instance.new("Frame", ScreenGui)
+ScytheFrame.Name             = "Scythe"
+ScytheFrame.Size             = UDim2.new(0, 80, 0, 320)
+ScytheFrame.BackgroundTransparency = 1
+ScytheFrame.BorderSizePixel  = 0
+ScytheFrame.ZIndex           = 5
+
+-- Mango (palo largo)
+local Handle = Instance.new("Frame", ScytheFrame)
+Handle.Size             = UDim2.new(0, 8, 0, 260)
+Handle.Position         = UDim2.new(0, 38, 0, 55)
+Handle.BackgroundColor3 = Color3.fromRGB(60, 35, 15)
+Handle.BorderSizePixel  = 0
+Instance.new("UICorner", Handle).CornerRadius = UDim.new(0, 4)
+Instance.new("UIGradient", Handle).Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 50, 20)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(55, 32, 12)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 20, 8)),
+})
+
+-- Vendas del mango
+for i, yp in ipairs({0.2, 0.35, 0.55, 0.72, 0.88}) do
+    local wr = Instance.new("Frame", Handle)
+    wr.Size             = UDim2.new(1, 4, 0, 5)
+    wr.Position         = UDim2.new(-0.25, 0, yp, 0)
+    wr.BackgroundColor3 = Color3.fromRGB(120, 90, 20)
+    wr.BorderSizePixel  = 0
+    Instance.new("UICorner", wr).CornerRadius = UDim.new(0, 2)
+end
+
+-- Punta inferior
+local BottomCap = Instance.new("Frame", ScytheFrame)
+BottomCap.Size             = UDim2.new(0, 12, 0, 10)
+BottomCap.Position         = UDim2.new(0, 36, 0, 308)
+BottomCap.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+BottomCap.BorderSizePixel  = 0
+Instance.new("UICorner", BottomCap).CornerRadius = UDim.new(0, 4)
+
+-- Hoja de la guadana
+local BladeBack = Instance.new("Frame", ScytheFrame)
+BladeBack.Size             = UDim2.new(0, 70, 0, 75)
+BladeBack.Position         = UDim2.new(0, 0, 0, 0)
+BladeBack.BackgroundColor3 = Color3.fromRGB(190, 190, 205)
+BladeBack.BorderSizePixel  = 0
+BladeBack.Rotation         = 15
+Instance.new("UICorner", BladeBack).CornerRadius = UDim.new(0.5, 0)
+Instance.new("UIGradient", BladeBack).Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 220, 235)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(250, 250, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(90, 90, 100)),
+})
+
+local BladeSharp = Instance.new("Frame", ScytheFrame)
+BladeSharp.Size             = UDim2.new(0, 55, 0, 55)
+BladeSharp.Position         = UDim2.new(0, 5, 0, 10)
+BladeSharp.BackgroundColor3 = Color3.fromRGB(6, 6, 8)
+BladeSharp.BorderSizePixel  = 0
+BladeSharp.Rotation         = 15
+Instance.new("UICorner", BladeSharp).CornerRadius = UDim.new(0.6, 0)
+
+-- Brillo hoja
+local BladeShine = Instance.new("Frame", ScytheFrame)
+BladeShine.Size             = UDim2.new(0, 5, 0, 40)
+BladeShine.Position         = UDim2.new(0, 10, 0, 8)
+BladeShine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+BladeShine.BorderSizePixel  = 0
+BladeShine.Rotation         = 30
+BladeShine.BackgroundTransparency = 0.4
+Instance.new("UICorner", BladeShine).CornerRadius = UDim.new(1, 0)
+
+-- Skull encima del mango
+local SkullTop = Instance.new("TextLabel", ScytheFrame)
+SkullTop.Size                   = UDim2.new(0, 28, 0, 28)
+SkullTop.Position               = UDim2.new(0, 27, 0, 43)
+SkullTop.BackgroundTransparency = 1
+SkullTop.Text                   = "💀"
+SkullTop.TextSize               = 20
+SkullTop.Font                   = Enum.Font.GothamBold
+SkullTop.ZIndex                 = 6
+
+-- Gotas de sangre
+for i, pos in ipairs({{8,38},{18,28},{28,18}}) do
+    local drop = Instance.new("Frame", ScytheFrame)
+    drop.Size             = UDim2.new(0, 5, 0, 8)
+    drop.Position         = UDim2.new(0, pos[1], 0, pos[2])
+    drop.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+    drop.BorderSizePixel  = 0
+    Instance.new("UICorner", drop).CornerRadius = UDim.new(1, 0)
+end
+
+-- Posicionar guadana relativa al Main y animar flotacion
 task.spawn(function()
     local t = 0
     while ScreenGui.Parent do
-        t = t + 0.05
-        local p = (math.sin(t) + 1) / 2
-        TitleLbl.TextColor3 = Color3.fromRGB(
-            180 + math.floor(p * 75),
-            150 + math.floor(p * 50),
-            255
+        t = t + 0.035
+        local wave = math.sin(t) * 8
+        ScytheFrame.Position = UDim2.new(
+            Main.Position.X.Scale,
+            Main.Position.X.Offset - 90,
+            Main.Position.Y.Scale,
+            Main.Position.Y.Offset - 30 + wave
         )
-        TitleLbl.TextStrokeTransparency = 0.1 + p * 0.5
+        BladeBack.BackgroundTransparency = 0.05 + math.abs(math.sin(t)) * 0.15
         task.wait(0.03)
     end
 end)
+
+-- ─── LLUVIA DE CALAVERAS EN SAVE BUTTON ────────────────────────
+for i = 1, 12 do
+    local drop = Instance.new("TextLabel", SaveFrame)
+    drop.Size                   = UDim2.new(0, 16, 0, 16)
+    drop.BackgroundTransparency = 1
+    drop.Text                   = "💀"
+    drop.TextSize               = 11
+    drop.Font                   = Enum.Font.GothamBold
+    drop.TextTransparency       = 1
+    drop.ZIndex                 = 5
+    task.spawn(function()
+        task.wait(math.random(0,30)/10)
+        while ScreenGui.Parent do
+            local xp = math.random(5,90)/100
+            drop.Position = UDim2.new(xp, 0, 0, -16)
+            drop.TextTransparency = 0.1
+            TweenService:Create(drop, TweenInfo.new(0.9+math.random(0,5)/10, Enum.EasingStyle.Linear), {
+                Position = UDim2.new(xp, 0, 1, 4),
+                TextTransparency = 0.9
+            }):Play()
+            task.wait(1.2 + math.random(0,15)/10)
+        end
+    end)
+end
 
 -- ─── OPEN ANIMATION ────────────────────────────────────────────
 Main.Size = UDim2.new(0,0,0,0)
