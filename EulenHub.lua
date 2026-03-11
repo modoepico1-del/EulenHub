@@ -162,14 +162,13 @@ player.CharacterAdded:Connect(function(newChar)
     if antiRagdollEnabled then task.wait(1); setupAntiRagdoll(newChar) end
 end)
 
--- ─── XRAY (Optimizer + XRay) ───────────────────────────────────
+-- ─── XRAY ──────────────────────────────────────────────────────
 local unwalkEnabled        = false
 local originalTransparency = {}
 local unwalkDescConn       = nil
 local unwalkCharConn       = nil
 
 local function startUnwalk()
-    -- Optimizer
     pcall(function()
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
         Lighting.GlobalShadows = false
@@ -188,7 +187,6 @@ local function startUnwalk()
             end)
         end
     end)
-    -- Character Clean
     local function cleanCharacter(char)
         if char == player.Character then return end
         pcall(function()
@@ -205,7 +203,6 @@ local function startUnwalk()
             if h:IsA("Humanoid") then cleanCharacter(h.Parent) end
         end
     end)
-    -- XRay: bases semitransparentes
     pcall(function()
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and obj.Anchored and
@@ -241,132 +238,7 @@ local function stopUnwalk()
     originalTransparency = {}
 end
 
--- ─── NOCLIP (Semi-Invisible) LOGIC ────────────────────────────
-local noclipConnections = {}
-local isInvisible       = false
-local noclipClone, oldRoot, hip, animTrack, noclipConn, noclipCharConn
-
-local function removeFolders()
-    local playerName = player.Name
-    local playerFolder = workspace:FindFirstChild(playerName)
-    if not playerFolder then return end
-    local doubleRig = playerFolder:FindFirstChild("DoubleRig")
-    if doubleRig then doubleRig:Destroy() end
-    local constraints = playerFolder:FindFirstChild("Constraints")
-    if constraints then constraints:Destroy() end
-    local c = playerFolder.ChildAdded:Connect(function(child)
-        if child.Name == "DoubleRig" or child.Name == "Constraints" then child:Destroy() end
-    end)
-    table.insert(noclipConnections, c)
-end
-
-local function doClone()
-    if not (character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0) then return false end
-    hip     = character.Humanoid.HipHeight
-    oldRoot = character:FindFirstChild("HumanoidRootPart")
-    if not oldRoot or not oldRoot.Parent then return false end
-    local tmp = Instance.new("Model"); tmp.Parent = game
-    character.Parent = tmp
-    noclipClone = oldRoot:Clone()
-    noclipClone.Parent = character
-    oldRoot.Parent = workspace.CurrentCamera
-    noclipClone.CFrame = oldRoot.CFrame
-    character.PrimaryPart = noclipClone
-    character.Parent = workspace
-    for _, v in pairs(character:GetDescendants()) do
-        if v:IsA("Weld") or v:IsA("Motor6D") then
-            if v.Part0 == oldRoot then v.Part0 = noclipClone end
-            if v.Part1 == oldRoot then v.Part1 = noclipClone end
-        end
-    end
-    tmp:Destroy()
-    return true
-end
-
-local function revertClone()
-    if not oldRoot or not oldRoot:IsDescendantOf(workspace) or not character or character.Humanoid.Health <= 0 then return end
-    local tmp = Instance.new("Model"); tmp.Parent = game
-    character.Parent = tmp
-    oldRoot.Parent = character
-    character.PrimaryPart = oldRoot
-    character.Parent = workspace
-    oldRoot.CanCollide = true
-    for _, v in pairs(character:GetDescendants()) do
-        if v:IsA("Weld") or v:IsA("Motor6D") then
-            if v.Part0 == noclipClone then v.Part0 = oldRoot end
-            if v.Part1 == noclipClone then v.Part1 = oldRoot end
-        end
-    end
-    if noclipClone then
-        local pos = noclipClone.CFrame
-        noclipClone:Destroy(); noclipClone = nil
-        oldRoot.CFrame = pos
-    end
-    oldRoot = nil
-    if character and character.Humanoid then character.Humanoid.HipHeight = hip end
-    tmp:Destroy()
-end
-
-local function animationTrickery()
-    if not (character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0) then return end
-    local anim = Instance.new("Animation")
-    anim.AnimationId = "http://www.roblox.com/asset/?id=18537363391"
-    local hum      = character.Humanoid
-    local animator = hum:FindFirstChild("Animator") or Instance.new("Animator", hum)
-    animTrack = animator:LoadAnimation(anim)
-    animTrack.Priority = Enum.AnimationPriority.Action4
-    animTrack:Play(0, 1, 0)
-    anim:Destroy()
-    local c = animTrack.Stopped:Connect(function()
-        if isInvisible then animationTrickery() end
-    end)
-    table.insert(noclipConnections, c)
-    task.delay(0, function()
-        animTrack.TimePosition = 0.7
-        task.delay(1, function() animTrack:AdjustSpeed(math.huge) end)
-    end)
-end
-
-local function enableNoclip()
-    if not character or character.Humanoid.Health <= 0 then return false end
-    removeFolders()
-    if not doClone() then return false end
-    task.wait(0.1)
-    animationTrickery()
-    noclipConn = RunService.PreSimulation:Connect(function()
-        if character and character:FindFirstChild("Humanoid") and character.Humanoid.Health > 0 and oldRoot then
-            local root = character.PrimaryPart or character:FindFirstChild("HumanoidRootPart")
-            if root then
-                local cf = root.CFrame - Vector3.new(0, character.Humanoid.HipHeight + (root.Size.Y/2) - 1 + 0.09, 0)
-                oldRoot.CFrame    = cf * CFrame.Angles(math.rad(180), 0, 0)
-                oldRoot.Velocity  = root.Velocity
-                oldRoot.CanCollide = false
-            end
-        end
-    end)
-    table.insert(noclipConnections, noclipConn)
-    noclipCharConn = player.CharacterAdded:Connect(function()
-        if isInvisible then
-            if animTrack then animTrack:Stop(); animTrack:Destroy(); animTrack = nil end
-            if noclipConn then noclipConn:Disconnect() end
-            revertClone(); removeFolders()
-            isInvisible = false
-            for _, c in ipairs(noclipConnections) do if c then c:Disconnect() end end
-            noclipConnections = {}
-        end
-    end)
-    table.insert(noclipConnections, noclipCharConn)
-    return true
-end
-
-local function disableNoclip()
-    if animTrack then animTrack:Stop(); animTrack:Destroy(); animTrack = nil end
-    if noclipConn then noclipConn:Disconnect() end
-    if noclipCharConn then noclipCharConn:Disconnect() end
-    revertClone(); removeFolders()
-    for _, c in ipairs(noclipConnections) do if c then c:Disconnect() end end
-    noclipConnections = {}
-end
+-- ─── SAVE / LOAD ───────────────────────────────────────────────
 local CONFIG_FILE = "KMoneyHub_config.json"
 
 local function saveConfig()
@@ -382,16 +254,20 @@ end
 local savedCfg = {}
 pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 
+-- ─── COLORES GALAXY ────────────────────────────────────────────
+local PURPLE     = Color3.fromRGB(140, 60, 255)
+local PURPLE_DIM = Color3.fromRGB(80, 30, 160)
+local PINK       = Color3.fromRGB(200, 80, 255)
+local BG         = Color3.fromRGB(4, 2, 10)
+local CARD       = Color3.fromRGB(8, 4, 18)
+local CARD2      = Color3.fromRGB(12, 6, 24)
+local WHITE      = Color3.fromRGB(220, 200, 255)
+local FULL_HEIGHT = 310
+
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
     CoreGui:FindFirstChild("KMoneyHub"):Destroy()
 end
-
-local CYAN     = Color3.fromRGB(0, 230, 255)
-local CYAN_DIM = Color3.fromRGB(0, 160, 200)
-local BG       = Color3.fromRGB(2, 2, 4)
-local CARD     = Color3.fromRGB(4, 7, 12)
-local FULL_HEIGHT = 356
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KMoneyHub"
@@ -402,163 +278,276 @@ pcall(function() ScreenGui.Parent = CoreGui end)
 
 local Main = Instance.new("Frame", ScreenGui)
 Main.Name             = "Main"
-Main.Size             = UDim2.new(0, 262, 0, FULL_HEIGHT)
-Main.Position         = UDim2.new(0.5, -131, 0.5, -150)
+Main.Size             = UDim2.new(0, 270, 0, FULL_HEIGHT)
+Main.Position         = UDim2.new(0.5, -135, 0.5, -155)
 Main.BackgroundColor3 = BG
 Main.BorderSizePixel  = 0
 Main.ClipsDescendants = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
-local neonStroke = Instance.new("UIStroke", Main)
-neonStroke.Color     = CYAN
-neonStroke.Thickness = 2
+-- Galaxy gradient background
+local UIGrad = Instance.new("UIGradient", Main)
+UIGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(6, 2, 16)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(4, 2, 12)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 3, 20)),
+})
+UIGrad.Rotation = 135
 
+-- Outer glow stroke
+local galaxyStroke = Instance.new("UIStroke", Main)
+galaxyStroke.Color     = PURPLE
+galaxyStroke.Thickness = 1.5
+
+-- Stars decoration
+for i = 1, 18 do
+    local star = Instance.new("Frame", Main)
+    star.Size             = UDim2.new(0, math.random(1,2), 0, math.random(1,2))
+    star.Position         = UDim2.new(math.random(0,95)/100, 0, math.random(0,95)/100, 0)
+    star.BackgroundColor3 = Color3.fromRGB(255, 240, 255)
+    star.BorderSizePixel  = 0
+    star.ZIndex           = 1
+    Instance.new("UICorner", star).CornerRadius = UDim.new(1, 0)
+    -- Twinkle
+    task.spawn(function()
+        local delay = math.random(0, 30) / 10
+        task.wait(delay)
+        while ScreenGui.Parent do
+            TweenService:Create(star, TweenInfo.new(math.random(8,18)/10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = 0.85}):Play()
+            task.wait(math.random(15,30)/10)
+        end
+    end)
+end
+
+-- Top shimmer line
 local TopLine = Instance.new("Frame", Main)
-TopLine.Size             = UDim2.new(1, 0, 0, 2)
-TopLine.BackgroundColor3 = CYAN
+TopLine.Size  = UDim2.new(1, 0, 0, 2)
+TopLine.BackgroundColor3 = PURPLE
 TopLine.BorderSizePixel  = 0
+Instance.new("UIGradient", TopLine).Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80,30,160)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200,80,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80,30,160)),
+})
 
+-- Title bar
 local TitleBar = Instance.new("Frame", Main)
-TitleBar.Size             = UDim2.new(1, 0, 0, 44)
+TitleBar.Size             = UDim2.new(1, 0, 0, 46)
 TitleBar.Position         = UDim2.new(0, 0, 0, 2)
 TitleBar.BackgroundColor3 = CARD
 TitleBar.BorderSizePixel  = 0
 
+local TitleGrad = Instance.new("UIGradient", TitleBar)
+TitleGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(12, 5, 28)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(6, 3, 14)),
+})
+TitleGrad.Rotation = 90
+
+-- Galaxy icon (✦)
+local IconLbl = Instance.new("TextLabel", TitleBar)
+IconLbl.Size                   = UDim2.new(0, 22, 1, 0)
+IconLbl.Position               = UDim2.new(0, 10, 0, 0)
+IconLbl.BackgroundTransparency = 1
+IconLbl.Text                   = "$"
+IconLbl.TextColor3             = PINK
+IconLbl.Font                   = Enum.Font.GothamBlack
+IconLbl.TextSize               = 16
+IconLbl.TextStrokeColor3       = PINK
+IconLbl.TextStrokeTransparency = 0.4
+
 local TitleLbl = Instance.new("TextLabel", TitleBar)
-TitleLbl.Size                   = UDim2.new(1, -46, 1, 0)
-TitleLbl.Position               = UDim2.new(0, 14, 0, 0)
+TitleLbl.Size                   = UDim2.new(1, -80, 1, 0)
+TitleLbl.Position               = UDim2.new(0, 36, 0, 0)
 TitleLbl.BackgroundTransparency = 1
 TitleLbl.Text                   = "KMONEY HUB"
-TitleLbl.TextColor3             = CYAN
-TitleLbl.TextStrokeColor3       = CYAN
-TitleLbl.TextStrokeTransparency = 0.4
-TitleLbl.Font                   = Enum.Font.GothamBold
-TitleLbl.TextSize               = 17
+TitleLbl.TextColor3             = WHITE
+TitleLbl.TextStrokeColor3       = PURPLE
+TitleLbl.TextStrokeTransparency = 0.3
+TitleLbl.Font                   = Enum.Font.GothamBlack
+TitleLbl.TextSize               = 16
 TitleLbl.TextXAlignment         = Enum.TextXAlignment.Left
 
-local DollarBtn = Instance.new("TextButton", TitleBar)
-DollarBtn.Size                   = UDim2.new(0, 28, 0, 28)
-DollarBtn.Position               = UDim2.new(1, -36, 0.5, -14)
-DollarBtn.BackgroundTransparency = 1
-DollarBtn.Text                   = "$"
-DollarBtn.TextColor3             = CYAN
-DollarBtn.TextStrokeColor3       = CYAN
-DollarBtn.TextStrokeTransparency = 0.3
-DollarBtn.Font                   = Enum.Font.GothamBold
-DollarBtn.TextSize               = 16
-DollarBtn.BorderSizePixel        = 0
-Instance.new("UIStroke", DollarBtn).Thickness = 0
+-- Minimize button
+local MinBtn = Instance.new("TextButton", TitleBar)
+MinBtn.Size                   = UDim2.new(0, 26, 0, 26)
+MinBtn.Position               = UDim2.new(1, -36, 0.5, -13)
+MinBtn.BackgroundColor3       = CARD2
+MinBtn.Text                   = "—"
+MinBtn.TextColor3             = PURPLE
+MinBtn.Font                   = Enum.Font.GothamBold
+MinBtn.TextSize               = 13
+MinBtn.BorderSizePixel        = 0
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
+local minStroke = Instance.new("UIStroke", MinBtn)
+minStroke.Color = PURPLE_DIM; minStroke.Thickness = 1; minStroke.Transparency = 0.5
 
+-- Content
 local Content = Instance.new("Frame", Main)
-Content.Size                   = UDim2.new(1, 0, 1, -47)
-Content.Position               = UDim2.new(0, 0, 0, 47)
+Content.Size                   = UDim2.new(1, 0, 1, -50)
+Content.Position               = UDim2.new(0, 0, 0, 50)
 Content.BackgroundTransparency = 1
 
-local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
+local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
 
-local function makeToggleRow(labelText, yOffset)
+-- ─── HELPER: toggle row ────────────────────────────────────────
+local function makeToggleRow(labelText, icon, yOffset)
     local Row = Instance.new("Frame", Content)
-    Row.Size             = UDim2.new(1, -28, 0, 44)
-    Row.Position         = UDim2.new(0, 14, 0, yOffset)
+    Row.Size             = UDim2.new(1, -24, 0, 46)
+    Row.Position         = UDim2.new(0, 12, 0, yOffset)
     Row.BackgroundColor3 = CARD
     Row.BorderSizePixel  = 0
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 10)
+
+    local rowGrad = Instance.new("UIGradient", Row)
+    rowGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(14, 6, 30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 4, 18)),
+    })
+    rowGrad.Rotation = 90
+
+    local rowStroke = Instance.new("UIStroke", Row)
+    rowStroke.Color = PURPLE_DIM; rowStroke.Thickness = 1; rowStroke.Transparency = 0.6
+
+    -- Icon
+    local IcoLbl = Instance.new("TextLabel", Row)
+    IcoLbl.Size = UDim2.new(0,22,1,0); IcoLbl.Position = UDim2.new(0,10,0,0)
+    IcoLbl.BackgroundTransparency = 1; IcoLbl.Text = icon
+    IcoLbl.TextColor3 = PURPLE; IcoLbl.Font = Enum.Font.GothamBold
+    IcoLbl.TextSize = 14
+
     local Lbl = Instance.new("TextLabel", Row)
-    Lbl.Size = UDim2.new(1,-60,1,0); Lbl.Position = UDim2.new(0,12,0,0)
+    Lbl.Size = UDim2.new(1,-70,1,0); Lbl.Position = UDim2.new(0,14,0,0)
     Lbl.BackgroundTransparency = 1; Lbl.Text = labelText
-    Lbl.TextColor3 = Color3.fromRGB(180,235,255); Lbl.TextStrokeColor3 = CYAN
-    Lbl.TextStrokeTransparency = 0.7; Lbl.Font = Enum.Font.GothamBold
-    Lbl.TextSize = 14; Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    Lbl.TextColor3 = WHITE; Lbl.Font = Enum.Font.GothamBold
+    Lbl.TextSize = 13; Lbl.TextXAlignment = Enum.TextXAlignment.Left
+
     local Btn = Instance.new("TextButton", Row)
-    Btn.Size = UDim2.new(0,46,0,24); Btn.Position = UDim2.new(1,-54,0.5,-12)
-    Btn.BackgroundColor3 = Color3.fromRGB(10,20,32); Btn.Text = ""; Btn.BorderSizePixel = 0
+    Btn.Size = UDim2.new(0,46,0,24); Btn.Position = UDim2.new(1,-56,0.5,-12)
+    Btn.BackgroundColor3 = Color3.fromRGB(8,4,18); Btn.Text = ""; Btn.BorderSizePixel = 0
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
     local bStroke = Instance.new("UIStroke", Btn)
-    bStroke.Color = CYAN_DIM; bStroke.Thickness = 1; bStroke.Transparency = 0.5
+    bStroke.Color = PURPLE_DIM; bStroke.Thickness = 1; bStroke.Transparency = 0.5
+
     local Knob = Instance.new("Frame", Btn)
     Knob.Size = UDim2.new(0,18,0,18); Knob.Position = UDim2.new(0,3,0.5,-9)
-    Knob.BackgroundColor3 = Color3.fromRGB(50,80,100); Knob.BorderSizePixel = 0
+    Knob.BackgroundColor3 = Color3.fromRGB(60,30,90); Knob.BorderSizePixel = 0
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1,0)
-    return Btn, Knob, bStroke
+
+    return Btn, Knob, bStroke, rowStroke
 end
 
-local function applyOn(b,k,s)
-    b.BackgroundColor3=CYAN; k.Position=UDim2.new(1,-21,0.5,-9)
-    k.BackgroundColor3=Color3.fromRGB(255,255,255); s.Color=CYAN; s.Transparency=0
+local function applyOn(b,k,s,rs)
+    b.BackgroundColor3 = PURPLE
+    k.Position         = UDim2.new(1,-21,0.5,-9)
+    k.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    s.Color = PURPLE; s.Transparency = 0
+    rs.Color = PURPLE; rs.Transparency = 0.2
 end
 
-local function applyOff(b,k,s)
-    b.BackgroundColor3=Color3.fromRGB(10,20,32); k.Position=UDim2.new(0,3,0.5,-9)
-    k.BackgroundColor3=Color3.fromRGB(50,80,100); s.Color=CYAN_DIM; s.Transparency=0.5
+local function applyOff(b,k,s,rs)
+    b.BackgroundColor3 = Color3.fromRGB(8,4,18)
+    k.Position         = UDim2.new(0,3,0.5,-9)
+    k.BackgroundColor3 = Color3.fromRGB(60,30,90)
+    s.Color = PURPLE_DIM; s.Transparency = 0.5
+    rs.Color = PURPLE_DIM; rs.Transparency = 0.6
 end
 
 -- ROW 1: Auto Steal
-local T1,K1,S1 = makeToggleRow("Auto Steal", 12)
-if savedCfg.AutoSteal then stealEnabled=true; startAutoSteal(); applyOn(T1,K1,S1) end
+local T1,K1,S1,RS1 = makeToggleRow("Auto Steal", "", 10)
+if savedCfg.AutoSteal then stealEnabled=true; startAutoSteal(); applyOn(T1,K1,S1,RS1) end
 T1.MouseButton1Click:Connect(function()
     stealEnabled = not stealEnabled
-    if stealEnabled then startAutoSteal(); TweenService:Create(T1,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K1,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S1.Color=CYAN; S1.Transparency=0
-    else stopAutoSteal(); TweenService:Create(T1,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K1,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S1.Color=CYAN_DIM; S1.Transparency=0.5 end
+    if stealEnabled then
+        startAutoSteal()
+        TweenService:Create(T1,ti,{BackgroundColor3=PURPLE}):Play()
+        TweenService:Create(K1,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play()
+        S1.Color=PURPLE; S1.Transparency=0; RS1.Color=PURPLE; RS1.Transparency=0.2
+    else
+        stopAutoSteal()
+        TweenService:Create(T1,ti,{BackgroundColor3=Color3.fromRGB(8,4,18)}):Play()
+        TweenService:Create(K1,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(60,30,90)}):Play()
+        S1.Color=PURPLE_DIM; S1.Transparency=0.5; RS1.Color=PURPLE_DIM; RS1.Transparency=0.6
+    end
 end)
 
 -- ROW 2: Anti Ragdoll
-local T2,K2,S2 = makeToggleRow("Anti Ragdoll", 68)
-if savedCfg.AntiRagdoll then antiRagdollEnabled=true; task.delay(1,function() setupAntiRagdoll(character) end); applyOn(T2,K2,S2) end
+local T2,K2,S2,RS2 = makeToggleRow("Anti Ragdoll", "", 66)
+if savedCfg.AntiRagdoll then antiRagdollEnabled=true; task.delay(1,function() setupAntiRagdoll(character) end); applyOn(T2,K2,S2,RS2) end
 T2.MouseButton1Click:Connect(function()
     antiRagdollEnabled = not antiRagdollEnabled
-    if antiRagdollEnabled then task.wait(0.5); setupAntiRagdoll(character); TweenService:Create(T2,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K2,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S2.Color=CYAN; S2.Transparency=0
-    else cleanupRagdoll(); disconnectRemote(); TweenService:Create(T2,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K2,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S2.Color=CYAN_DIM; S2.Transparency=0.5 end
+    if antiRagdollEnabled then
+        task.wait(0.5); setupAntiRagdoll(character)
+        TweenService:Create(T2,ti,{BackgroundColor3=PURPLE}):Play()
+        TweenService:Create(K2,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play()
+        S2.Color=PURPLE; S2.Transparency=0; RS2.Color=PURPLE; RS2.Transparency=0.2
+    else
+        cleanupRagdoll(); disconnectRemote()
+        TweenService:Create(T2,ti,{BackgroundColor3=Color3.fromRGB(8,4,18)}):Play()
+        TweenService:Create(K2,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(60,30,90)}):Play()
+        S2.Color=PURPLE_DIM; S2.Transparency=0.5; RS2.Color=PURPLE_DIM; RS2.Transparency=0.6
+    end
 end)
 
 -- ROW 3: XRAY
-local T3,K3,S3 = makeToggleRow("XRAY", 124)
-if savedCfg.XRAY then unwalkEnabled=true; startUnwalk(); applyOn(T3,K3,S3) end
+local T3,K3,S3,RS3 = makeToggleRow("XRAY", "", 122)
+if savedCfg.XRAY then unwalkEnabled=true; startUnwalk(); applyOn(T3,K3,S3,RS3) end
 T3.MouseButton1Click:Connect(function()
     unwalkEnabled = not unwalkEnabled
-    if unwalkEnabled then startUnwalk(); TweenService:Create(T3,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K3,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S3.Color=CYAN; S3.Transparency=0
-    else stopUnwalk(); TweenService:Create(T3,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K3,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S3.Color=CYAN_DIM; S3.Transparency=0.5 end
-end)
-
--- ROW 4: Noclip
-local T4,K4,S4 = makeToggleRow("Noclip", 180)
-T4.MouseButton1Click:Connect(function()
-    isInvisible = not isInvisible
-    if isInvisible then
-        removeFolders()
-        if enableNoclip() then
-            TweenService:Create(T4,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K4,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S4.Color=CYAN; S4.Transparency=0
-        else
-            isInvisible = false
-        end
+    if unwalkEnabled then
+        startUnwalk()
+        TweenService:Create(T3,ti,{BackgroundColor3=PURPLE}):Play()
+        TweenService:Create(K3,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play()
+        S3.Color=PURPLE; S3.Transparency=0; RS3.Color=PURPLE; RS3.Transparency=0.2
     else
-        disableNoclip()
-        TweenService:Create(T4,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K4,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S4.Color=CYAN_DIM; S4.Transparency=0.5
+        stopUnwalk()
+        TweenService:Create(T3,ti,{BackgroundColor3=Color3.fromRGB(8,4,18)}):Play()
+        TweenService:Create(K3,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(60,30,90)}):Play()
+        S3.Color=PURPLE_DIM; S3.Transparency=0.5; RS3.Color=PURPLE_DIM; RS3.Transparency=0.6
     end
 end)
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
-SaveFrame.Size                   = UDim2.new(1, -28, 0, 40)
-SaveFrame.Position               = UDim2.new(0, 14, 0, 248)
+SaveFrame.Size                   = UDim2.new(1, -24, 0, 40)
+SaveFrame.Position               = UDim2.new(0, 12, 0, 200)
 SaveFrame.BackgroundTransparency = 1
-SaveFrame.BorderSizePixel        = 0
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
 SaveBtn.Size             = UDim2.new(1, 0, 1, 0)
-SaveBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-SaveBtn.Text             = "SAVE CONFIG"
+SaveBtn.BackgroundColor3 = PURPLE
+SaveBtn.Text             = "$  SAVE CONFIG  $"
 SaveBtn.Font             = Enum.Font.GothamBlack
-SaveBtn.TextSize         = 14
-SaveBtn.TextColor3       = Color3.fromRGB(255, 255, 255)
+SaveBtn.TextSize         = 13
+SaveBtn.TextColor3       = Color3.fromRGB(255, 240, 255)
 SaveBtn.BorderSizePixel  = 0
 Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 10)
+local saveGrad = Instance.new("UIGradient", SaveBtn)
+saveGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(120,40,220)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180,60,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(120,40,220)),
+})
 
 SaveBtn.MouseButton1Click:Connect(function()
     saveConfig()
-    SaveBtn.Text = "✅ SAVED!"
+    SaveBtn.Text = "$  SAVED!  $"
     task.wait(1)
-    SaveBtn.Text = "SAVE CONFIG"
+    SaveBtn.Text = "$  SAVE CONFIG  $"
 end)
+
+-- ─── SEPARATOR LINE ────────────────────────────────────────────
+local Sep = Instance.new("Frame", Content)
+Sep.Size             = UDim2.new(1, -24, 0, 1)
+Sep.Position         = UDim2.new(0, 12, 0, 186)
+Sep.BackgroundColor3 = PURPLE_DIM
+Sep.BorderSizePixel  = 0
+Sep.BackgroundTransparency = 0.6
+Instance.new("UIGradient", Sep).Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140,60,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0)),
+})
 
 -- ─── DRAGGABLE ─────────────────────────────────────────────────
 do
@@ -579,25 +568,49 @@ do
     end)
 end
 
--- ─── $ MINIMIZAR / RESTAURAR ───────────────────────────────────
+-- ─── MINIMIZAR ─────────────────────────────────────────────────
 local minimized = false
-DollarBtn.MouseButton1Click:Connect(function()
+MinBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
-    TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-        Size = minimized and UDim2.new(0,262,0,48) or UDim2.new(0,262,0,FULL_HEIGHT)
+    MinBtn.Text = minimized and "+" or "—"
+    TweenService:Create(Main, TweenInfo.new(0.22, Enum.EasingStyle.Quad), {
+        Size = minimized and UDim2.new(0,270,0,50) or UDim2.new(0,270,0,FULL_HEIGHT)
     }):Play()
 end)
 
--- ─── NEON PULSE ────────────────────────────────────────────────
+-- ─── GALAXY PULSE ──────────────────────────────────────────────
 task.spawn(function()
     local t = 0
     while ScreenGui.Parent do
-        t = t + 0.045
-        neonStroke.Transparency = 0.05 + ((math.sin(t)+1)/2)*0.5
+        t = t + 0.04
+        local pulse = (math.sin(t) + 1) / 2
+        galaxyStroke.Transparency = 0.1 + pulse * 0.6
+        galaxyStroke.Color = Color3.fromRGB(
+            140 + math.floor(pulse * 60),
+            30 + math.floor(pulse * 30),
+            255
+        )
+        task.wait(0.03)
+    end
+end)
+
+
+-- ─── TITLE SHIMMER ─────────────────────────────────────────────
+task.spawn(function()
+    local t = 0
+    while ScreenGui.Parent do
+        t = t + 0.05
+        local p = (math.sin(t) + 1) / 2
+        TitleLbl.TextColor3 = Color3.fromRGB(
+            180 + math.floor(p * 75),
+            150 + math.floor(p * 50),
+            255
+        )
+        TitleLbl.TextStrokeTransparency = 0.1 + p * 0.5
         task.wait(0.03)
     end
 end)
 
 -- ─── OPEN ANIMATION ────────────────────────────────────────────
 Main.Size = UDim2.new(0,0,0,0)
-TweenService:Create(Main, TweenInfo.new(0.35,Enum.EasingStyle.Back,Enum.EasingDirection.Out), {Size=UDim2.new(0,262,0,FULL_HEIGHT)}):Play()
+TweenService:Create(Main, TweenInfo.new(0.4,Enum.EasingStyle.Back,Enum.EasingDirection.Out), {Size=UDim2.new(0,270,0,FULL_HEIGHT)}):Play()
