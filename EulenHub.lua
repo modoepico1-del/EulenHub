@@ -244,92 +244,6 @@ local function stopUnwalk()
     revertUnwalk()
 end
 
--- ─── HITBOX LOGIC ─────────────────────────────────────────────
-_G.HeadSize = 15
-local hitboxEnabled = false
-local hitboxTarget  = nil
-local FACES = {
-    Enum.NormalId.Front, Enum.NormalId.Back,
-    Enum.NormalId.Left,  Enum.NormalId.Right,
-    Enum.NormalId.Top,   Enum.NormalId.Bottom
-}
-
-local function applyHitbox(plr)
-    local char = plr.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    for _, c in ipairs(hrp:GetChildren()) do
-        if c:IsA("SurfaceGui") then c:Destroy() end
-    end
-    for _, face in ipairs(FACES) do
-        local sg = Instance.new("SurfaceGui")
-        sg.Face           = face
-        sg.Adornee        = hrp
-        sg.AlwaysOnTop    = true
-        sg.SizingMode     = Enum.SurfaceGuiSizingMode.PixelsPerStud
-        sg.CanvasSize     = Vector2.new(100, 100)
-        sg.Parent         = hrp
-        local txt = Instance.new("TextLabel")
-        txt.Size                   = UDim2.new(1,0,1,0)
-        txt.BackgroundTransparency = 1
-        txt.Text                   = "KMONEY"
-        txt.TextColor3             = Color3.fromRGB(0, 230, 255)
-        txt.TextScaled             = true
-        txt.Font                   = Enum.Font.GothamBold
-        txt.Parent                 = sg
-    end
-end
-
-local function clearHitbox(plr)
-    local char = plr.Character
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    for _, c in ipairs(hrp:GetChildren()) do
-        if c:IsA("SurfaceGui") then c:Destroy() end
-    end
-end
-
-local function getNearestPlayer()
-    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return nil end
-    local nearest, minDist = nil, math.huge
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= player and p.Character then
-            local hrp = p.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local d = (hrp.Position - myRoot.Position).Magnitude
-                if d < minDist then minDist = d; nearest = p end
-            end
-        end
-    end
-    return nearest
-end
-
-RunService.RenderStepped:Connect(function()
-    if not hitboxEnabled then
-        if hitboxTarget then clearHitbox(hitboxTarget); hitboxTarget = nil end
-        return
-    end
-    local target = getNearestPlayer()
-    if target ~= hitboxTarget then
-        if hitboxTarget then clearHitbox(hitboxTarget) end
-        hitboxTarget = target
-        if hitboxTarget then applyHitbox(hitboxTarget) end
-    end
-    if hitboxTarget and hitboxTarget.Character then
-        local hrp = hitboxTarget.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.Size         = Vector3.new(_G.HeadSize, _G.HeadSize, _G.HeadSize)
-            hrp.Transparency = 0.7
-            hrp.BrickColor   = BrickColor.new("Black")
-            hrp.Material     = Enum.Material.Neon
-            hrp.CanCollide   = false
-        end
-    end
-end)
-
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
     CoreGui:FindFirstChild("KMoneyHub"):Destroy()
@@ -341,7 +255,7 @@ local BG       = Color3.fromRGB(2, 2, 4)
 local CARD     = Color3.fromRGB(4, 7, 12)
 
 -- Height: 120 base + 56 per extra row (3 rows = 232)
-local FULL_HEIGHT = 288
+local FULL_HEIGHT = 232
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KMoneyHub"
@@ -510,23 +424,6 @@ Toggle3.MouseButton1Click:Connect(function()
         TweenService:Create(Toggle3, ti, {BackgroundColor3 = Color3.fromRGB(10,20,32)}):Play()
         TweenService:Create(Knob3, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(50,80,100)}):Play()
         tStroke3.Color = CYAN_DIM; tStroke3.Transparency = 0.5
-    end
-end)
-
--- ─── ROW 4: Hitbox ─────────────────────────────────────────────
-local Toggle4, Knob4, tStroke4 = makeToggleRow("Hitbox", 180)
-
-Toggle4.MouseButton1Click:Connect(function()
-    hitboxEnabled = not hitboxEnabled
-    if hitboxEnabled then
-        TweenService:Create(Toggle4, ti, {BackgroundColor3 = CYAN}):Play()
-        TweenService:Create(Knob4, ti, {Position = UDim2.new(1,-21,0.5,-9), BackgroundColor3 = Color3.fromRGB(255,255,255)}):Play()
-        tStroke4.Color = CYAN; tStroke4.Transparency = 0
-    else
-        if hitboxTarget then clearHitbox(hitboxTarget); hitboxTarget = nil end
-        TweenService:Create(Toggle4, ti, {BackgroundColor3 = Color3.fromRGB(10,20,32)}):Play()
-        TweenService:Create(Knob4, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(50,80,100)}):Play()
-        tStroke4.Color = CYAN_DIM; tStroke4.Transparency = 0.5
     end
 end)
 
