@@ -15,6 +15,25 @@ player.CharacterAdded:Connect(function(newChar)
     HRP       = newChar:WaitForChild("HumanoidRootPart", 5)
 end)
 
+-- ─── SAVE / LOAD ───────────────────────────────────────────────
+local HttpService  = game:GetService("HttpService")
+local CONFIG_FILE  = "KMoneyHub_config.json"
+
+local function saveConfig()
+    pcall(function()
+        writefile(CONFIG_FILE, HttpService:JSONEncode({
+            AutoSteal   = stealEnabled,
+            AntiRagdoll = antiRagdollEnabled,
+            XRAY        = unwalkEnabled,
+        }))
+    end)
+end
+
+local savedCfg = {}
+pcall(function()
+    savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE))
+end)
+
 -- ─── AUTO STEAL LOGIC ──────────────────────────────────────────
 local stealEnabled  = false
 local stealCooldown = 0.2
@@ -387,7 +406,19 @@ Toggle1.MouseButton1Click:Connect(function()
         TweenService:Create(Knob1, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(50,80,100)}):Play()
         tStroke1.Color = CYAN_DIM; tStroke1.Transparency = 0.5
     end
+    saveConfig()
 end)
+
+-- restore Auto Steal
+if savedCfg.AutoSteal then
+    stealEnabled = true
+    startAutoSteal()
+    Toggle1.BackgroundColor3 = CYAN
+    Knob1.Position           = UDim2.new(1,-21,0.5,-9)
+    Knob1.BackgroundColor3   = Color3.fromRGB(255,255,255)
+    tStroke1.Color           = CYAN
+    tStroke1.Transparency    = 0
+end
 
 -- ─── ROW 2: Anti Ragdoll ───────────────────────────────────────
 local Toggle2, Knob2, tStroke2 = makeToggleRow("Anti Ragdoll", 68)
@@ -407,7 +438,19 @@ Toggle2.MouseButton1Click:Connect(function()
         TweenService:Create(Knob2, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(50,80,100)}):Play()
         tStroke2.Color = CYAN_DIM; tStroke2.Transparency = 0.5
     end
+    saveConfig()
 end)
+
+-- restore Anti Ragdoll
+if savedCfg.AntiRagdoll then
+    antiRagdollEnabled = true
+    task.delay(1, function() setupAntiRagdoll(character) end)
+    Toggle2.BackgroundColor3 = CYAN
+    Knob2.Position           = UDim2.new(1,-21,0.5,-9)
+    Knob2.BackgroundColor3   = Color3.fromRGB(255,255,255)
+    tStroke2.Color           = CYAN
+    tStroke2.Transparency    = 0
+end
 
 -- ─── ROW 3: XRAY ──────────────────────────────────────────────
 local Toggle3, Knob3, tStroke3 = makeToggleRow("XRAY", 124)
@@ -425,7 +468,19 @@ Toggle3.MouseButton1Click:Connect(function()
         TweenService:Create(Knob3, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(50,80,100)}):Play()
         tStroke3.Color = CYAN_DIM; tStroke3.Transparency = 0.5
     end
+    saveConfig()
 end)
+
+-- restore XRAY
+if savedCfg.XRAY then
+    unwalkEnabled = true
+    startUnwalk()
+    Toggle3.BackgroundColor3 = CYAN
+    Knob3.Position           = UDim2.new(1,-21,0.5,-9)
+    Knob3.BackgroundColor3   = Color3.fromRGB(255,255,255)
+    tStroke3.Color           = CYAN
+    tStroke3.Transparency    = 0
+end
 
 -- ─── DRAGGABLE ─────────────────────────────────────────────────
 do
