@@ -4,6 +4,7 @@ local TweenService      = game:GetService("TweenService")
 local CoreGui           = game:GetService("CoreGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService        = game:GetService("RunService")
+local HttpService       = game:GetService("HttpService")
 
 local player    = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -13,25 +14,6 @@ local Camera    = workspace.CurrentCamera
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
     HRP       = newChar:WaitForChild("HumanoidRootPart", 5)
-end)
-
--- ─── SAVE / LOAD ───────────────────────────────────────────────
-local HttpService  = game:GetService("HttpService")
-local CONFIG_FILE  = "KMoneyHub_config.json"
-
-local function saveConfig()
-    pcall(function()
-        writefile(CONFIG_FILE, HttpService:JSONEncode({
-            AutoSteal   = stealEnabled,
-            AntiRagdoll = antiRagdollEnabled,
-            XRAY        = unwalkEnabled,
-        }))
-    end)
-end
-
-local savedCfg = {}
-pcall(function()
-    savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE))
 end)
 
 -- ─── AUTO STEAL LOGIC ──────────────────────────────────────────
@@ -150,50 +132,33 @@ local function setupAntiRagdoll(char)
                             :WaitForChild("Ragdoll", 5)
     end)
 
-    if not ragdollRemote or not ragdollRemote:IsA("RemoteEvent") then
-        warn("[Anti-Ragdoll] Could not find Ragdoll remote")
-        return
-    end
+    if not ragdollRemote or not ragdollRemote:IsA("RemoteEvent") then return end
 
     ragdollRemoteConnection = ragdollRemote.OnClientEvent:Connect(function(arg1, arg2)
         if not antiRagdollEnabled then return end
-
         if arg1 == "Make" or arg2 == "manualM" then
             humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
             Camera.CameraSubject = head
             root.CanCollide = false
-
             if controls then pcall(controls.Enable, controls) end
             cleanupRagdoll()
-
             local anchor = Instance.new("BodyPosition")
-            anchor.Name          = "RagdollAnchor"
-            anchor.MaxForce      = Vector3.new(1e5, 1e5, 1e5)
-            anchor.Position      = root.Position
-            anchor.D             = 200
-            anchor.P             = 5000
-            anchor.Parent        = root
-
+            anchor.Name = "RagdollAnchor"; anchor.MaxForce = Vector3.new(1e5,1e5,1e5)
+            anchor.Position = root.Position; anchor.D = 200; anchor.P = 5000
+            anchor.Parent = root
             moveConnection = RunService.Heartbeat:Connect(function()
-                if not antiRagdollEnabled then
-                    cleanupRagdoll()
-                    return
-                end
+                if not antiRagdollEnabled then cleanupRagdoll(); return end
                 local moveDir = Vector3.zero
-                if controls then
-                    pcall(function() moveDir = controls:GetMoveVector() end)
-                end
+                if controls then pcall(function() moveDir = controls:GetMoveVector() end) end
                 if moveDir.Magnitude > 0.1 then
-                    local camCF   = Camera.CFrame
-                    local flatFwd = Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z).Unit
-                    local flatRgt = Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z).Unit
-                    local worldDir = (flatFwd * -moveDir.Z + flatRgt * moveDir.X).Unit
-                    anchor.Position = root.Position + worldDir * RAGDOLL_SPEED * 0.1
+                    local camCF = Camera.CFrame
+                    local flatFwd = Vector3.new(camCF.LookVector.X,0,camCF.LookVector.Z).Unit
+                    local flatRgt = Vector3.new(camCF.RightVector.X,0,camCF.RightVector.Z).Unit
+                    anchor.Position = root.Position + (flatFwd*-moveDir.Z+flatRgt*moveDir.X).Unit*RAGDOLL_SPEED*0.1
                 else
                     anchor.Position = root.Position
                 end
             end)
-
         elseif arg1 == "Destroy" or arg2 == "manualD" then
             cleanupRagdoll()
             humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -204,24 +169,18 @@ local function setupAntiRagdoll(char)
     end)
 end
 
--- Hook character spawns for Anti Ragdoll
 player.CharacterAdded:Connect(function(newChar)
-    if antiRagdollEnabled then
-        task.wait(1)
-        setupAntiRagdoll(newChar)
-    end
+    if antiRagdollEnabled then task.wait(1); setupAntiRagdoll(newChar) end
 end)
 
--- ─── UNWALK LOGIC ──────────────────────────────────────────────
-local unwalkEnabled       = false
+-- ─── XRAY LOGIC ────────────────────────────────────────────────
+local unwalkEnabled        = false
 local originalTransparency = {}
-local unwalkDescConn      = nil
-local unwalkCharConn      = nil
+local unwalkDescConn       = nil
+local unwalkCharConn       = nil
 
 local function isPlayerBase(obj)
-    if not (obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("UnionOperation")) then
-        return false
-    end
+    if not (obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("UnionOperation")) then return false end
     local n = obj.Name:lower()
     local p = obj.Parent and obj.Parent.Name:lower() or ""
     return n:find("base") or n:find("claim") or p:find("base") or p:find("claim")
@@ -252,8 +211,7 @@ local function startUnwalk()
         end
     end)
     unwalkCharConn = player.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        if unwalkEnabled then applyUnwalk() end
+        task.wait(0.5); if unwalkEnabled then applyUnwalk() end
     end)
 end
 
@@ -262,6 +220,22 @@ local function stopUnwalk()
     if unwalkCharConn then unwalkCharConn:Disconnect(); unwalkCharConn = nil end
     revertUnwalk()
 end
+
+-- ─── SAVE / LOAD ───────────────────────────────────────────────
+local CONFIG_FILE = "KMoneyHub_config.json"
+
+local function saveConfig()
+    pcall(function()
+        writefile(CONFIG_FILE, HttpService:JSONEncode({
+            AutoSteal   = stealEnabled,
+            AntiRagdoll = antiRagdollEnabled,
+            XRAY        = unwalkEnabled,
+        }))
+    end)
+end
+
+local savedCfg = {}
+pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
@@ -273,8 +247,7 @@ local CYAN_DIM = Color3.fromRGB(0, 160, 200)
 local BG       = Color3.fromRGB(2, 2, 4)
 local CARD     = Color3.fromRGB(4, 7, 12)
 
--- Height: 120 base + 56 per extra row (3 rows = 232)
-local FULL_HEIGHT = 232
+local FULL_HEIGHT = 300
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KMoneyHub"
@@ -286,7 +259,7 @@ pcall(function() ScreenGui.Parent = CoreGui end)
 local Main = Instance.new("Frame", ScreenGui)
 Main.Name             = "Main"
 Main.Size             = UDim2.new(0, 262, 0, FULL_HEIGHT)
-Main.Position         = UDim2.new(0.5, -131, 0.5, -88)
+Main.Position         = UDim2.new(0.5, -131, 0.5, -150)
 Main.BackgroundColor3 = BG
 Main.BorderSizePixel  = 0
 Main.ClipsDescendants = true
@@ -301,7 +274,6 @@ TopLine.Size             = UDim2.new(1, 0, 0, 2)
 TopLine.BackgroundColor3 = CYAN
 TopLine.BorderSizePixel  = 0
 
--- Title bar
 local TitleBar = Instance.new("Frame", Main)
 TitleBar.Size             = UDim2.new(1, 0, 0, 44)
 TitleBar.Position         = UDim2.new(0, 0, 0, 2)
@@ -333,13 +305,11 @@ DollarBtn.TextSize               = 16
 DollarBtn.BorderSizePixel        = 0
 Instance.new("UIStroke", DollarBtn).Thickness = 0
 
--- Content
 local Content = Instance.new("Frame", Main)
 Content.Size                   = UDim2.new(1, 0, 1, -47)
 Content.Position               = UDim2.new(0, 0, 0, 47)
 Content.BackgroundTransparency = 1
 
--- ─── HELPER: build a toggle row ────────────────────────────────
 local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
 
 local function makeToggleRow(labelText, yOffset)
@@ -349,138 +319,92 @@ local function makeToggleRow(labelText, yOffset)
     Row.BackgroundColor3 = CARD
     Row.BorderSizePixel  = 0
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 8)
-
-    local rStroke = Instance.new("UIStroke", Row)
-    rStroke.Color        = CYAN_DIM
-    rStroke.Thickness    = 0
-    rStroke.Transparency = 1
-
     local Lbl = Instance.new("TextLabel", Row)
-    Lbl.Size                   = UDim2.new(1, -60, 1, 0)
-    Lbl.Position               = UDim2.new(0, 12, 0, 0)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Text                   = labelText
-    Lbl.TextColor3             = Color3.fromRGB(180, 235, 255)
-    Lbl.TextStrokeColor3       = CYAN
-    Lbl.TextStrokeTransparency = 0.7
-    Lbl.Font                   = Enum.Font.GothamBold
-    Lbl.TextSize               = 14
-    Lbl.TextXAlignment         = Enum.TextXAlignment.Left
-
+    Lbl.Size = UDim2.new(1,-60,1,0); Lbl.Position = UDim2.new(0,12,0,0)
+    Lbl.BackgroundTransparency = 1; Lbl.Text = labelText
+    Lbl.TextColor3 = Color3.fromRGB(180,235,255); Lbl.TextStrokeColor3 = CYAN
+    Lbl.TextStrokeTransparency = 0.7; Lbl.Font = Enum.Font.GothamBold
+    Lbl.TextSize = 14; Lbl.TextXAlignment = Enum.TextXAlignment.Left
     local Btn = Instance.new("TextButton", Row)
-    Btn.Size             = UDim2.new(0, 46, 0, 24)
-    Btn.Position         = UDim2.new(1, -54, 0.5, -12)
-    Btn.BackgroundColor3 = Color3.fromRGB(10, 20, 32)
-    Btn.Text             = ""
-    Btn.BorderSizePixel  = 0
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
-
+    Btn.Size = UDim2.new(0,46,0,24); Btn.Position = UDim2.new(1,-54,0.5,-12)
+    Btn.BackgroundColor3 = Color3.fromRGB(10,20,32); Btn.Text = ""; Btn.BorderSizePixel = 0
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
     local bStroke = Instance.new("UIStroke", Btn)
-    bStroke.Color        = CYAN_DIM
-    bStroke.Thickness    = 1
-    bStroke.Transparency = 0.5
-
+    bStroke.Color = CYAN_DIM; bStroke.Thickness = 1; bStroke.Transparency = 0.5
     local Knob = Instance.new("Frame", Btn)
-    Knob.Size             = UDim2.new(0, 18, 0, 18)
-    Knob.Position         = UDim2.new(0, 3, 0.5, -9)
-    Knob.BackgroundColor3 = Color3.fromRGB(50, 80, 100)
-    Knob.BorderSizePixel  = 0
-    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
-
+    Knob.Size = UDim2.new(0,18,0,18); Knob.Position = UDim2.new(0,3,0.5,-9)
+    Knob.BackgroundColor3 = Color3.fromRGB(50,80,100); Knob.BorderSizePixel = 0
+    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1,0)
     return Btn, Knob, bStroke
 end
 
--- ─── ROW 1: Auto Steal ─────────────────────────────────────────
-local Toggle1, Knob1, tStroke1 = makeToggleRow("Auto Steal", 12)
-
-Toggle1.MouseButton1Click:Connect(function()
-    stealEnabled = not stealEnabled
-    if stealEnabled then
-        startAutoSteal()
-        TweenService:Create(Toggle1, ti, {BackgroundColor3 = CYAN}):Play()
-        TweenService:Create(Knob1, ti, {Position = UDim2.new(1,-21,0.5,-9), BackgroundColor3 = Color3.fromRGB(255,255,255)}):Play()
-        tStroke1.Color = CYAN; tStroke1.Transparency = 0
-    else
-        stopAutoSteal()
-        TweenService:Create(Toggle1, ti, {BackgroundColor3 = Color3.fromRGB(10,20,32)}):Play()
-        TweenService:Create(Knob1, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(50,80,100)}):Play()
-        tStroke1.Color = CYAN_DIM; tStroke1.Transparency = 0.5
-    end
-    saveConfig()
-end)
-
--- restore Auto Steal
-if savedCfg.AutoSteal then
-    stealEnabled = true
-    startAutoSteal()
-    Toggle1.BackgroundColor3 = CYAN
-    Knob1.Position           = UDim2.new(1,-21,0.5,-9)
-    Knob1.BackgroundColor3   = Color3.fromRGB(255,255,255)
-    tStroke1.Color           = CYAN
-    tStroke1.Transparency    = 0
+local function applyOn(btn, knob, stroke)
+    btn.BackgroundColor3  = CYAN
+    knob.Position         = UDim2.new(1,-21,0.5,-9)
+    knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    stroke.Color          = CYAN; stroke.Transparency = 0
 end
+
+local function applyOff(btn, knob, stroke)
+    btn.BackgroundColor3  = Color3.fromRGB(10,20,32)
+    knob.Position         = UDim2.new(0,3,0.5,-9)
+    knob.BackgroundColor3 = Color3.fromRGB(50,80,100)
+    stroke.Color          = CYAN_DIM; stroke.Transparency = 0.5
+end
+
+-- ─── ROW 1: Auto Steal ─────────────────────────────────────────
+local T1, K1, S1 = makeToggleRow("Auto Steal", 12)
+if savedCfg.AutoSteal then stealEnabled = true; startAutoSteal(); applyOn(T1,K1,S1) end
+
+T1.MouseButton1Click:Connect(function()
+    stealEnabled = not stealEnabled
+    if stealEnabled then startAutoSteal(); TweenService:Create(T1,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K1,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S1.Color=CYAN; S1.Transparency=0
+    else stopAutoSteal(); TweenService:Create(T1,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K1,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S1.Color=CYAN_DIM; S1.Transparency=0.5 end
+end)
 
 -- ─── ROW 2: Anti Ragdoll ───────────────────────────────────────
-local Toggle2, Knob2, tStroke2 = makeToggleRow("Anti Ragdoll", 68)
+local T2, K2, S2 = makeToggleRow("Anti Ragdoll", 68)
+if savedCfg.AntiRagdoll then antiRagdollEnabled = true; task.delay(1, function() setupAntiRagdoll(character) end); applyOn(T2,K2,S2) end
 
-Toggle2.MouseButton1Click:Connect(function()
+T2.MouseButton1Click:Connect(function()
     antiRagdollEnabled = not antiRagdollEnabled
-    if antiRagdollEnabled then
-        task.wait(0.5)
-        setupAntiRagdoll(character)
-        TweenService:Create(Toggle2, ti, {BackgroundColor3 = CYAN}):Play()
-        TweenService:Create(Knob2, ti, {Position = UDim2.new(1,-21,0.5,-9), BackgroundColor3 = Color3.fromRGB(255,255,255)}):Play()
-        tStroke2.Color = CYAN; tStroke2.Transparency = 0
-    else
-        cleanupRagdoll()
-        disconnectRemote()
-        TweenService:Create(Toggle2, ti, {BackgroundColor3 = Color3.fromRGB(10,20,32)}):Play()
-        TweenService:Create(Knob2, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(50,80,100)}):Play()
-        tStroke2.Color = CYAN_DIM; tStroke2.Transparency = 0.5
-    end
-    saveConfig()
+    if antiRagdollEnabled then task.wait(0.5); setupAntiRagdoll(character); TweenService:Create(T2,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K2,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S2.Color=CYAN; S2.Transparency=0
+    else cleanupRagdoll(); disconnectRemote(); TweenService:Create(T2,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K2,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S2.Color=CYAN_DIM; S2.Transparency=0.5 end
 end)
 
--- restore Anti Ragdoll
-if savedCfg.AntiRagdoll then
-    antiRagdollEnabled = true
-    task.delay(1, function() setupAntiRagdoll(character) end)
-    Toggle2.BackgroundColor3 = CYAN
-    Knob2.Position           = UDim2.new(1,-21,0.5,-9)
-    Knob2.BackgroundColor3   = Color3.fromRGB(255,255,255)
-    tStroke2.Color           = CYAN
-    tStroke2.Transparency    = 0
-end
+-- ─── ROW 3: XRAY ───────────────────────────────────────────────
+local T3, K3, S3 = makeToggleRow("XRAY", 124)
+if savedCfg.XRAY then unwalkEnabled = true; startUnwalk(); applyOn(T3,K3,S3) end
 
--- ─── ROW 3: XRAY ──────────────────────────────────────────────
-local Toggle3, Knob3, tStroke3 = makeToggleRow("XRAY", 124)
-
-Toggle3.MouseButton1Click:Connect(function()
+T3.MouseButton1Click:Connect(function()
     unwalkEnabled = not unwalkEnabled
-    if unwalkEnabled then
-        startUnwalk()
-        TweenService:Create(Toggle3, ti, {BackgroundColor3 = CYAN}):Play()
-        TweenService:Create(Knob3, ti, {Position = UDim2.new(1,-21,0.5,-9), BackgroundColor3 = Color3.fromRGB(255,255,255)}):Play()
-        tStroke3.Color = CYAN; tStroke3.Transparency = 0
-    else
-        stopUnwalk()
-        TweenService:Create(Toggle3, ti, {BackgroundColor3 = Color3.fromRGB(10,20,32)}):Play()
-        TweenService:Create(Knob3, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(50,80,100)}):Play()
-        tStroke3.Color = CYAN_DIM; tStroke3.Transparency = 0.5
-    end
-    saveConfig()
+    if unwalkEnabled then startUnwalk(); TweenService:Create(T3,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K3,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S3.Color=CYAN; S3.Transparency=0
+    else stopUnwalk(); TweenService:Create(T3,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K3,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S3.Color=CYAN_DIM; S3.Transparency=0.5 end
 end)
 
--- restore XRAY
-if savedCfg.XRAY then
-    unwalkEnabled = true
-    startUnwalk()
-    Toggle3.BackgroundColor3 = CYAN
-    Knob3.Position           = UDim2.new(1,-21,0.5,-9)
-    Knob3.BackgroundColor3   = Color3.fromRGB(255,255,255)
-    tStroke3.Color           = CYAN
-    tStroke3.Transparency    = 0
-end
+-- ─── SAVE BUTTON ───────────────────────────────────────────────
+local SaveFrame = Instance.new("Frame", Content)
+SaveFrame.Size             = UDim2.new(1, -28, 0, 40)
+SaveFrame.Position         = UDim2.new(0, 14, 0, 192)
+SaveFrame.BackgroundTransparency = 1
+SaveFrame.BorderSizePixel  = 0
+
+local SaveBtn = Instance.new("TextButton", SaveFrame)
+SaveBtn.Size             = UDim2.new(1, 0, 1, 0)
+SaveBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+SaveBtn.Text             = "SAVE CONFIG"
+SaveBtn.Font             = Enum.Font.GothamBlack
+SaveBtn.TextSize         = 14
+SaveBtn.TextColor3       = Color3.fromRGB(255, 255, 255)
+SaveBtn.BorderSizePixel  = 0
+Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 10)
+
+SaveBtn.MouseButton1Click:Connect(function()
+    saveConfig()
+    SaveBtn.Text = "✅ SAVED!"
+    task.wait(1)
+    SaveBtn.Text = "SAVE CONFIG"
+end)
 
 -- ─── DRAGGABLE ─────────────────────────────────────────────────
 do
@@ -496,7 +420,7 @@ do
     UserInputService.InputChanged:Connect(function(inp)
         if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
             local d = inp.Position - dragStart
-            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)
         end
     end)
 end
@@ -506,7 +430,7 @@ local minimized = false
 DollarBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     TweenService:Create(Main, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-        Size = minimized and UDim2.new(0, 262, 0, 48) or UDim2.new(0, 262, 0, FULL_HEIGHT)
+        Size = minimized and UDim2.new(0,262,0,48) or UDim2.new(0,262,0,FULL_HEIGHT)
     }):Play()
 end)
 
