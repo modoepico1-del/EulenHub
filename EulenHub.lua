@@ -180,6 +180,55 @@ local unwalkDescConn       = nil
 local unwalkCharConn       = nil
 local Lighting             = game:GetService("Lighting")
 
+-- Anti-lag: limpiar personajes
+local cleanedCharacters = {}
+
+local function destroyAllEquippableItems(character)
+    if not character then return end
+    if not unwalkEnabled then return end
+    pcall(function()
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("Accessory") or child:IsA("Hat") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") then child:Destroy() end
+        end
+        local bodyColors = character:FindFirstChildOfClass("BodyColors")
+        if bodyColors then bodyColors:Destroy() end
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("CharacterMesh") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child.ClassName == "LayeredClothing" or child.ClassName == "WrapLayer" then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("BasePart") then
+                local mesh = child:FindFirstChildOfClass("SpecialMesh")
+                if mesh then mesh:Destroy() end
+            end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("PointLight") or child:IsA("SpotLight") or child:IsA("SurfaceLight") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Fire") or child:IsA("Smoke") or child:IsA("Sparkles") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Highlight") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Decal") or child:IsA("Texture") then
+                if not (child.Name == "face" and child.Parent and child.Parent.Name == "Head") then
+                    child:Destroy()
+                end
+            end
+        end
+    end)
+end
+
 local function startUnwalk()
     -- Optimizer
     pcall(function()
@@ -200,6 +249,14 @@ local function startUnwalk()
             end)
         end
     end)
+    -- Anti-lag: limpiar todos los personajes actuales
+    cleanedCharacters = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character then
+            destroyAllEquippableItems(p.Character)
+            cleanedCharacters[p] = true
+        end
+    end
     -- XRay: bases semitransparentes
     pcall(function()
         for _, obj in ipairs(workspace:GetDescendants()) do
@@ -235,6 +292,7 @@ local function stopUnwalk()
         pcall(function() obj.LocalTransparencyModifier = val end)
     end
     originalTransparency = {}
+    cleanedCharacters = {}
 end
 
 -- ─── SAVE / LOAD ───────────────────────────────────────────────
