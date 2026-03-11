@@ -178,47 +178,63 @@ local unwalkEnabled        = false
 local originalTransparency = {}
 local unwalkDescConn       = nil
 local unwalkCharConn       = nil
-
-local function isPlayerBase(obj)
-    if not (obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("UnionOperation")) then return false end
-    local n = obj.Name:lower()
-    local p = obj.Parent and obj.Parent.Name:lower() or ""
-    return n:find("base") or n:find("claim") or p:find("base") or p:find("claim")
-end
-
-local function applyUnwalk()
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if isPlayerBase(obj) then
-            originalTransparency[obj] = obj.LocalTransparencyModifier
-            obj.LocalTransparencyModifier = 0.8
-        end
-    end
-end
-
-local function revertUnwalk()
-    for obj, val in pairs(originalTransparency) do
-        pcall(function() obj.LocalTransparencyModifier = val end)
-    end
-    originalTransparency = {}
-end
+local Lighting             = game:GetService("Lighting")
 
 local function startUnwalk()
-    applyUnwalk()
-    unwalkDescConn = workspace.DescendantAdded:Connect(function(obj)
-        if unwalkEnabled and isPlayerBase(obj) then
-            originalTransparency[obj] = obj.LocalTransparencyModifier
-            obj.LocalTransparencyModifier = 0.8
+    -- Optimizer
+    pcall(function()
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        Lighting.GlobalShadows = false
+        Lighting.Brightness    = 3
+        Lighting.FogEnd        = 9e9
+    end)
+    pcall(function()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            pcall(function()
+                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then
+                    obj:Destroy()
+                elseif obj:IsA("BasePart") then
+                    obj.CastShadow = false
+                    obj.Material   = Enum.Material.Plastic
+                end
+            end)
         end
     end)
+    -- XRay: bases semitransparentes
+    pcall(function()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Anchored and
+               (obj.Name:lower():find("base") or obj.Name:lower():find("claim") or
+               (obj.Parent and (obj.Parent.Name:lower():find("base") or obj.Parent.Name:lower():find("claim")))) then
+                originalTransparency[obj] = obj.LocalTransparencyModifier
+                obj.LocalTransparencyModifier = 0.85
+            end
+        end
+    end)
+    unwalkDescConn = workspace.DescendantAdded:Connect(function(obj)
+        if not unwalkEnabled then return end
+        pcall(function()
+            if obj:IsA("BasePart") and obj.Anchored and
+               (obj.Name:lower():find("base") or obj.Name:lower():find("claim") or
+               (obj.Parent and (obj.Parent.Name:lower():find("base") or obj.Parent.Name:lower():find("claim")))) then
+                originalTransparency[obj] = obj.LocalTransparencyModifier
+                obj.LocalTransparencyModifier = 0.85
+            end
+        end)
+    end)
     unwalkCharConn = player.CharacterAdded:Connect(function()
-        task.wait(0.5); if unwalkEnabled then applyUnwalk() end
+        task.wait(0.5)
+        if unwalkEnabled then startUnwalk() end
     end)
 end
 
 local function stopUnwalk()
     if unwalkDescConn then unwalkDescConn:Disconnect(); unwalkDescConn = nil end
     if unwalkCharConn then unwalkCharConn:Disconnect(); unwalkCharConn = nil end
-    revertUnwalk()
+    for obj, val in pairs(originalTransparency) do
+        pcall(function() obj.LocalTransparencyModifier = val end)
+    end
+    originalTransparency = {}
 end
 
 -- ─── SAVE / LOAD ───────────────────────────────────────────────
