@@ -333,8 +333,8 @@ local function makeToggleRow(labelText, yOffset)
 
     local rStroke = Instance.new("UIStroke", Row)
     rStroke.Color        = CYAN_DIM
-    rStroke.Thickness    = 1
-    rStroke.Transparency = 0.45
+    rStroke.Thickness    = 0
+    rStroke.Transparency = 1
 
     local Lbl = Instance.new("TextLabel", Row)
     Lbl.Size                   = UDim2.new(1, -60, 1, 0)
@@ -410,7 +410,7 @@ Toggle2.MouseButton1Click:Connect(function()
 end)
 
 -- ─── ROW 3: Unwalk ─────────────────────────────────────────────
-local Toggle3, Knob3, tStroke3 = makeToggleRow("Unwalk", 124)
+local Toggle3, Knob3, tStroke3 = makeToggleRow("XRAY", 124)
 
 Toggle3.MouseButton1Click:Connect(function()
     unwalkEnabled = not unwalkEnabled
