@@ -5,6 +5,7 @@ local CoreGui           = game:GetService("CoreGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService        = game:GetService("RunService")
 local HttpService       = game:GetService("HttpService")
+local Lighting          = game:GetService("Lighting")
 
 local player    = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -16,7 +17,7 @@ player.CharacterAdded:Connect(function(newChar)
     HRP       = newChar:WaitForChild("HumanoidRootPart", 5)
 end)
 
--- ─── AUTO STEAL LOGIC ──────────────────────────────────────────
+-- ─── AUTO STEAL ────────────────────────────────────────────────
 local stealEnabled  = false
 local stealCooldown = 0.2
 local HOLD_DURATION = 0.5
@@ -79,14 +80,13 @@ local function stopAutoSteal()
     stealThread  = nil
 end
 
--- ─── ANTI RAGDOLL LOGIC ────────────────────────────────────────
+-- ─── ANTI RAGDOLL ──────────────────────────────────────────────
 local antiRagdollEnabled      = false
 local RAGDOLL_SPEED           = 16
 local currentCharacter        = nil
 local ragdollRemoteConnection = nil
 local moveConnection          = nil
-local playerModule            = nil
-local controls                = nil
+local playerModule, controls  = nil, nil
 
 pcall(function()
     playerModule = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
@@ -101,39 +101,28 @@ local function cleanupRagdoll()
             if anchor then anchor:Destroy() end
         end
     end
-    if moveConnection then
-        moveConnection:Disconnect()
-        moveConnection = nil
-    end
+    if moveConnection then moveConnection:Disconnect(); moveConnection = nil end
 end
 
 local function disconnectRemote()
-    if ragdollRemoteConnection then
-        ragdollRemoteConnection:Disconnect()
-        ragdollRemoteConnection = nil
-    end
+    if ragdollRemoteConnection then ragdollRemoteConnection:Disconnect(); ragdollRemoteConnection = nil end
 end
 
 local function setupAntiRagdoll(char)
     currentCharacter = char
     cleanupRagdoll()
     disconnectRemote()
-
     local humanoid = char:WaitForChild("Humanoid", 5)
     local root     = char:WaitForChild("HumanoidRootPart", 5)
     local head     = char:WaitForChild("Head", 5)
-
     if not (humanoid and root and head) then return end
-
     local ragdollRemote
     pcall(function()
         ragdollRemote = ReplicatedStorage:WaitForChild("Packages", 8)
                             :WaitForChild("Ragdoll", 5)
                             :WaitForChild("Ragdoll", 5)
     end)
-
     if not ragdollRemote or not ragdollRemote:IsA("RemoteEvent") then return end
-
     ragdollRemoteConnection = ragdollRemote.OnClientEvent:Connect(function(arg1, arg2)
         if not antiRagdollEnabled then return end
         if arg1 == "Make" or arg2 == "manualM" then
@@ -151,10 +140,10 @@ local function setupAntiRagdoll(char)
                 local moveDir = Vector3.zero
                 if controls then pcall(function() moveDir = controls:GetMoveVector() end) end
                 if moveDir.Magnitude > 0.1 then
-                    local camCF = Camera.CFrame
-                    local flatFwd = Vector3.new(camCF.LookVector.X,0,camCF.LookVector.Z).Unit
-                    local flatRgt = Vector3.new(camCF.RightVector.X,0,camCF.RightVector.Z).Unit
-                    anchor.Position = root.Position + (flatFwd*-moveDir.Z+flatRgt*moveDir.X).Unit*RAGDOLL_SPEED*0.1
+                    local cf = Camera.CFrame
+                    local fwd = Vector3.new(cf.LookVector.X,0,cf.LookVector.Z).Unit
+                    local rgt = Vector3.new(cf.RightVector.X,0,cf.RightVector.Z).Unit
+                    anchor.Position = root.Position + (fwd*-moveDir.Z+rgt*moveDir.X).Unit*RAGDOLL_SPEED*0.1
                 else
                     anchor.Position = root.Position
                 end
@@ -173,64 +162,13 @@ player.CharacterAdded:Connect(function(newChar)
     if antiRagdollEnabled then task.wait(1); setupAntiRagdoll(newChar) end
 end)
 
--- ─── XRAY LOGIC ────────────────────────────────────────────────
+-- ─── XRAY (Optimizer + XRay) ───────────────────────────────────
 local unwalkEnabled        = false
 local originalTransparency = {}
 local unwalkDescConn       = nil
 local unwalkCharConn       = nil
-local Lighting             = game:GetService("Lighting")
-
--- Anti-lag: limpiar personajes
-local cleanedCharacters = {}
-
-local function destroyAllEquippableItems(character)
-    if not character then return end
-    if not unwalkEnabled then return end
-    pcall(function()
-        for _, child in ipairs(character:GetChildren()) do
-            if child:IsA("Accessory") or child:IsA("Hat") then child:Destroy() end
-        end
-        for _, child in ipairs(character:GetChildren()) do
-            if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") then child:Destroy() end
-        end
-        local bodyColors = character:FindFirstChildOfClass("BodyColors")
-        if bodyColors then bodyColors:Destroy() end
-        for _, child in ipairs(character:GetChildren()) do
-            if child:IsA("CharacterMesh") then child:Destroy() end
-        end
-        for _, child in ipairs(character:GetDescendants()) do
-            if child.ClassName == "LayeredClothing" or child.ClassName == "WrapLayer" then child:Destroy() end
-        end
-        for _, child in ipairs(character:GetChildren()) do
-            if child:IsA("BasePart") then
-                local mesh = child:FindFirstChildOfClass("SpecialMesh")
-                if mesh then mesh:Destroy() end
-            end
-        end
-        for _, child in ipairs(character:GetDescendants()) do
-            if child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") then child:Destroy() end
-        end
-        for _, child in ipairs(character:GetDescendants()) do
-            if child:IsA("PointLight") or child:IsA("SpotLight") or child:IsA("SurfaceLight") then child:Destroy() end
-        end
-        for _, child in ipairs(character:GetDescendants()) do
-            if child:IsA("Fire") or child:IsA("Smoke") or child:IsA("Sparkles") then child:Destroy() end
-        end
-        for _, child in ipairs(character:GetDescendants()) do
-            if child:IsA("Highlight") then child:Destroy() end
-        end
-        for _, child in ipairs(character:GetDescendants()) do
-            if child:IsA("Decal") or child:IsA("Texture") then
-                if not (child.Name == "face" and child.Parent and child.Parent.Name == "Head") then
-                    child:Destroy()
-                end
-            end
-        end
-    end)
-end
 
 local function startUnwalk()
-    -- Optimizer
     pcall(function()
         settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
         Lighting.GlobalShadows = false
@@ -249,15 +187,6 @@ local function startUnwalk()
             end)
         end
     end)
-    -- Anti-lag: limpiar todos los personajes actuales
-    cleanedCharacters = {}
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= player and p.Character then
-            destroyAllEquippableItems(p.Character)
-            cleanedCharacters[p] = true
-        end
-    end
-    -- XRay: bases semitransparentes
     pcall(function()
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and obj.Anchored and
@@ -280,8 +209,7 @@ local function startUnwalk()
         end)
     end)
     unwalkCharConn = player.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        if unwalkEnabled then startUnwalk() end
+        task.wait(0.5); if unwalkEnabled then startUnwalk() end
     end)
 end
 
@@ -292,7 +220,6 @@ local function stopUnwalk()
         pcall(function() obj.LocalTransparencyModifier = val end)
     end
     originalTransparency = {}
-    cleanedCharacters = {}
 end
 
 -- ─── SAVE / LOAD ───────────────────────────────────────────────
@@ -320,7 +247,6 @@ local CYAN     = Color3.fromRGB(0, 230, 255)
 local CYAN_DIM = Color3.fromRGB(0, 160, 200)
 local BG       = Color3.fromRGB(2, 2, 4)
 local CARD     = Color3.fromRGB(4, 7, 12)
-
 local FULL_HEIGHT = 300
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -412,44 +338,37 @@ local function makeToggleRow(labelText, yOffset)
     return Btn, Knob, bStroke
 end
 
-local function applyOn(btn, knob, stroke)
-    btn.BackgroundColor3  = CYAN
-    knob.Position         = UDim2.new(1,-21,0.5,-9)
-    knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
-    stroke.Color          = CYAN; stroke.Transparency = 0
+local function applyOn(b,k,s)
+    b.BackgroundColor3=CYAN; k.Position=UDim2.new(1,-21,0.5,-9)
+    k.BackgroundColor3=Color3.fromRGB(255,255,255); s.Color=CYAN; s.Transparency=0
 end
 
-local function applyOff(btn, knob, stroke)
-    btn.BackgroundColor3  = Color3.fromRGB(10,20,32)
-    knob.Position         = UDim2.new(0,3,0.5,-9)
-    knob.BackgroundColor3 = Color3.fromRGB(50,80,100)
-    stroke.Color          = CYAN_DIM; stroke.Transparency = 0.5
+local function applyOff(b,k,s)
+    b.BackgroundColor3=Color3.fromRGB(10,20,32); k.Position=UDim2.new(0,3,0.5,-9)
+    k.BackgroundColor3=Color3.fromRGB(50,80,100); s.Color=CYAN_DIM; s.Transparency=0.5
 end
 
--- ─── ROW 1: Auto Steal ─────────────────────────────────────────
-local T1, K1, S1 = makeToggleRow("Auto Steal", 12)
-if savedCfg.AutoSteal then stealEnabled = true; startAutoSteal(); applyOn(T1,K1,S1) end
-
+-- ROW 1: Auto Steal
+local T1,K1,S1 = makeToggleRow("Auto Steal", 12)
+if savedCfg.AutoSteal then stealEnabled=true; startAutoSteal(); applyOn(T1,K1,S1) end
 T1.MouseButton1Click:Connect(function()
     stealEnabled = not stealEnabled
     if stealEnabled then startAutoSteal(); TweenService:Create(T1,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K1,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S1.Color=CYAN; S1.Transparency=0
     else stopAutoSteal(); TweenService:Create(T1,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K1,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S1.Color=CYAN_DIM; S1.Transparency=0.5 end
 end)
 
--- ─── ROW 2: Anti Ragdoll ───────────────────────────────────────
-local T2, K2, S2 = makeToggleRow("Anti Ragdoll", 68)
-if savedCfg.AntiRagdoll then antiRagdollEnabled = true; task.delay(1, function() setupAntiRagdoll(character) end); applyOn(T2,K2,S2) end
-
+-- ROW 2: Anti Ragdoll
+local T2,K2,S2 = makeToggleRow("Anti Ragdoll", 68)
+if savedCfg.AntiRagdoll then antiRagdollEnabled=true; task.delay(1,function() setupAntiRagdoll(character) end); applyOn(T2,K2,S2) end
 T2.MouseButton1Click:Connect(function()
     antiRagdollEnabled = not antiRagdollEnabled
     if antiRagdollEnabled then task.wait(0.5); setupAntiRagdoll(character); TweenService:Create(T2,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K2,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S2.Color=CYAN; S2.Transparency=0
     else cleanupRagdoll(); disconnectRemote(); TweenService:Create(T2,ti,{BackgroundColor3=Color3.fromRGB(10,20,32)}):Play(); TweenService:Create(K2,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,80,100)}):Play(); S2.Color=CYAN_DIM; S2.Transparency=0.5 end
 end)
 
--- ─── ROW 3: XRAY ───────────────────────────────────────────────
-local T3, K3, S3 = makeToggleRow("XRAY", 124)
-if savedCfg.XRAY then unwalkEnabled = true; startUnwalk(); applyOn(T3,K3,S3) end
-
+-- ROW 3: XRAY
+local T3,K3,S3 = makeToggleRow("XRAY", 124)
+if savedCfg.XRAY then unwalkEnabled=true; startUnwalk(); applyOn(T3,K3,S3) end
 T3.MouseButton1Click:Connect(function()
     unwalkEnabled = not unwalkEnabled
     if unwalkEnabled then startUnwalk(); TweenService:Create(T3,ti,{BackgroundColor3=CYAN}):Play(); TweenService:Create(K3,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255)}):Play(); S3.Color=CYAN; S3.Transparency=0
@@ -458,10 +377,10 @@ end)
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
-SaveFrame.Size             = UDim2.new(1, -28, 0, 40)
-SaveFrame.Position         = UDim2.new(0, 14, 0, 192)
+SaveFrame.Size                   = UDim2.new(1, -28, 0, 40)
+SaveFrame.Position               = UDim2.new(0, 14, 0, 192)
 SaveFrame.BackgroundTransparency = 1
-SaveFrame.BorderSizePixel  = 0
+SaveFrame.BorderSizePixel        = 0
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
 SaveBtn.Size             = UDim2.new(1, 0, 1, 0)
@@ -485,11 +404,11 @@ do
     local dragging, dragStart, startPos = false, nil, nil
     TitleBar.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true; dragStart = inp.Position; startPos = Main.Position
+            dragging=true; dragStart=inp.Position; startPos=Main.Position
         end
     end)
     UserInputService.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false end
     end)
     UserInputService.InputChanged:Connect(function(inp)
         if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
@@ -499,7 +418,7 @@ do
     end)
 end
 
--- ─── $ = MINIMIZAR / RESTAURAR ─────────────────────────────────
+-- ─── $ MINIMIZAR / RESTAURAR ───────────────────────────────────
 local minimized = false
 DollarBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -513,15 +432,11 @@ task.spawn(function()
     local t = 0
     while ScreenGui.Parent do
         t = t + 0.045
-        local pulse = (math.sin(t) + 1) / 2
-        neonStroke.Transparency = 0.05 + pulse * 0.5
+        neonStroke.Transparency = 0.05 + ((math.sin(t)+1)/2)*0.5
         task.wait(0.03)
     end
 end)
 
 -- ─── OPEN ANIMATION ────────────────────────────────────────────
-Main.Size = UDim2.new(0, 0, 0, 0)
-TweenService:Create(Main,
-    TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-    {Size = UDim2.new(0, 262, 0, FULL_HEIGHT)}
-):Play()
+Main.Size = UDim2.new(0,0,0,0)
+TweenService:Create(Main, TweenInfo.new(0.35,Enum.EasingStyle.Back,Enum.EasingDirection.Out), {Size=UDim2.new(0,262,0,FULL_HEIGHT)}):Play()
