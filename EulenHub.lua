@@ -238,6 +238,109 @@ local function stopUnwalk()
     originalTransparency = {}
 end
 
+-- ─── DARK MODE ─────────────────────────────────────────────────
+local darkModeEnabled  = false
+local darkModeObjects  = {}
+local originalLighting = {}
+
+local function saveLightingState()
+    originalLighting = {
+        ClockTime                = Lighting.ClockTime,
+        Ambient                  = Lighting.Ambient,
+        Brightness               = Lighting.Brightness,
+        EnvironmentDiffuseScale  = Lighting.EnvironmentDiffuseScale,
+        EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale,
+        GlobalShadows            = Lighting.GlobalShadows,
+        OutdoorAmbient           = Lighting.OutdoorAmbient,
+        FogColor                 = Lighting.FogColor,
+        FogEnd                   = Lighting.FogEnd,
+        FogStart                 = Lighting.FogStart,
+    }
+end
+
+local function startDarkMode()
+    saveLightingState()
+    darkModeObjects = {}
+
+    -- Sky negro
+    local sky = Instance.new("Sky")
+    sky.Name                 = "BlackSky"
+    sky.SkyboxBk             = "rbxassetid://2013298"
+    sky.SkyboxDn             = "rbxassetid://2013298"
+    sky.SkyboxFt             = "rbxassetid://2013298"
+    sky.SkyboxLf             = "rbxassetid://2013298"
+    sky.SkyboxRt             = "rbxassetid://2013298"
+    sky.SkyboxUp             = "rbxassetid://2013298"
+    sky.StarCount            = 0
+    sky.CelestialBodiesShown = false
+    sky.SunAngularSize       = 21
+    sky.MoonAngularSize      = 11
+    sky.Parent               = Lighting
+    table.insert(darkModeObjects, sky)
+
+    -- Atmosphere oscura
+    local atmosphere = Instance.new("Atmosphere")
+    atmosphere.Name    = "BlackAtmosphere"
+    atmosphere.Density = 0.3
+    atmosphere.Offset  = 0.25
+    atmosphere.Color   = Color3.new(0.7803921699523926, 0.7803921699523926, 0.7803921699523926)
+    atmosphere.Decay   = Color3.new(0.4156862795352936, 0.43921568989753723, 0.4901960790157318)
+    atmosphere.Glare   = 0
+    atmosphere.Haze    = 0
+    atmosphere.Parent  = Lighting
+    table.insert(darkModeObjects, atmosphere)
+
+    -- Bloom
+    local bloom = Instance.new("BloomEffect")
+    bloom.Name      = "BlackBloom"
+    bloom.Enabled   = true
+    bloom.Intensity = 1
+    bloom.Size      = 24
+    bloom.Threshold = 2
+    bloom.Parent    = Lighting
+    table.insert(darkModeObjects, bloom)
+
+    -- SunRays
+    local sunRays = Instance.new("SunRaysEffect")
+    sunRays.Name      = "BlackSunRays"
+    sunRays.Enabled   = true
+    sunRays.Intensity = 0.01
+    sunRays.Spread    = 0.1
+    sunRays.Parent    = Lighting
+    table.insert(darkModeObjects, sunRays)
+
+    -- Propiedades de Lighting
+    Lighting.ClockTime               = 0
+    Lighting.Ambient                 = Color3.new(0, 0, 0)
+    Lighting.Brightness              = 1
+    Lighting.EnvironmentDiffuseScale = 1
+    Lighting.EnvironmentSpecularScale= 1
+    Lighting.GlobalShadows           = true
+    Lighting.OutdoorAmbient          = Color3.new(0, 0, 0)
+    Lighting.FogColor                = Color3.new(0, 0, 0)
+    Lighting.FogEnd                  = 10000
+    Lighting.FogStart                = 100
+end
+
+local function stopDarkMode()
+    for _, obj in ipairs(darkModeObjects) do
+        pcall(function() obj:Destroy() end)
+    end
+    darkModeObjects = {}
+    pcall(function()
+        Lighting.ClockTime               = originalLighting.ClockTime or 14
+        Lighting.Ambient                 = originalLighting.Ambient or Color3.new(0,0,0)
+        Lighting.Brightness              = originalLighting.Brightness or 2
+        Lighting.EnvironmentDiffuseScale = originalLighting.EnvironmentDiffuseScale or 1
+        Lighting.EnvironmentSpecularScale= originalLighting.EnvironmentSpecularScale or 1
+        Lighting.GlobalShadows           = originalLighting.GlobalShadows ~= nil and originalLighting.GlobalShadows or true
+        Lighting.OutdoorAmbient          = originalLighting.OutdoorAmbient or Color3.new(0.5,0.5,0.5)
+        Lighting.FogColor                = originalLighting.FogColor or Color3.new(0.75,0.75,0.75)
+        Lighting.FogEnd                  = originalLighting.FogEnd or 100000
+        Lighting.FogStart                = originalLighting.FogStart or 0
+    end)
+end
+
 -- ─── SAVE / LOAD ───────────────────────────────────────────────
 local CONFIG_FILE = "KMoneyHub_config.json"
 
@@ -247,6 +350,7 @@ local function saveConfig()
             AutoSteal   = stealEnabled,
             AntiRagdoll = antiRagdollEnabled,
             XRAY        = unwalkEnabled,
+            DarkMode    = darkModeEnabled,
         }))
     end)
 end
@@ -255,10 +359,9 @@ local savedCfg = {}
 pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 
 -- ─── PALETA ────────────────────────────────────────────────────
-local WHITE      = Color3.fromRGB(255, 255, 255)
-local BLACK      = Color3.fromRGB(0, 0, 0)
-local TRANSPARENT = Color3.fromRGB(0, 0, 0)
-local FULL_HEIGHT = 315
+local WHITE       = Color3.fromRGB(255, 255, 255)
+local BLACK       = Color3.fromRGB(0, 0, 0)
+local FULL_HEIGHT = 371
 
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
@@ -272,36 +375,31 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.DisplayOrder   = 999
 pcall(function() ScreenGui.Parent = CoreGui end)
 
--- Main frame - 100% transparente
 local Main = Instance.new("Frame", ScreenGui)
-Main.Name                 = "Main"
-Main.Size                 = UDim2.new(0, 270, 0, FULL_HEIGHT)
-Main.Position             = UDim2.new(0.5, -135, 0.5, -157)
+Main.Name                   = "Main"
+Main.Size                   = UDim2.new(0, 270, 0, FULL_HEIGHT)
+Main.Position               = UDim2.new(0.5, -135, 0.5, -185)
 Main.BackgroundTransparency = 1
-Main.BorderSizePixel      = 0
-Main.ClipsDescendants     = true
+Main.BorderSizePixel        = 0
+Main.ClipsDescendants       = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
--- Borde negro con glow neon
 local grimStroke = Instance.new("UIStroke", Main)
-grimStroke.Color       = BLACK
-grimStroke.Thickness   = 2
+grimStroke.Color        = BLACK
+grimStroke.Thickness    = 2
 grimStroke.Transparency = 0
 
--- Línea superior negra
 local TopLine = Instance.new("Frame", Main)
 TopLine.Size             = UDim2.new(1, 0, 0, 2)
 TopLine.BackgroundColor3 = BLACK
 TopLine.BorderSizePixel  = 0
 
--- Title bar - transparente
 local TitleBar = Instance.new("Frame", Main)
 TitleBar.Size               = UDim2.new(1, 0, 0, 48)
 TitleBar.Position           = UDim2.new(0, 0, 0, 2)
 TitleBar.BackgroundTransparency = 1
 TitleBar.BorderSizePixel    = 0
 
--- Título BLANCO
 local TitleLbl = Instance.new("TextLabel", TitleBar)
 TitleLbl.Size                   = UDim2.new(1, -46, 1, 0)
 TitleLbl.Position               = UDim2.new(0, 14, 0, 0)
@@ -314,7 +412,6 @@ TitleLbl.Font                   = Enum.Font.GothamBlack
 TitleLbl.TextSize               = 16
 TitleLbl.TextXAlignment         = Enum.TextXAlignment.Left
 
--- Botón minimizar
 local MinBtn = Instance.new("TextButton", TitleBar)
 MinBtn.Size               = UDim2.new(0, 26, 0, 26)
 MinBtn.Position           = UDim2.new(1, -36, 0.5, -13)
@@ -328,7 +425,6 @@ Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 local minStroke = Instance.new("UIStroke", MinBtn)
 minStroke.Color = BLACK; minStroke.Thickness = 1.5; minStroke.Transparency = 0
 
--- Content
 local Content = Instance.new("Frame", Main)
 Content.Size                 = UDim2.new(1, 0, 1, -52)
 Content.Position             = UDim2.new(0, 0, 0, 52)
@@ -425,17 +521,31 @@ T3.MouseButton1Click:Connect(function()
     end
 end)
 
+-- ROW 4: Dark Mode
+local T4,K4,S4,RS4 = makeToggleRow("Dark Mode", 178)
+if savedCfg.DarkMode then darkModeEnabled=true; startDarkMode(); applyOn(T4,K4,S4,RS4) end
+T4.MouseButton1Click:Connect(function()
+    darkModeEnabled = not darkModeEnabled
+    if darkModeEnabled then
+        startDarkMode()
+        TweenService:Create(K4,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
+    else
+        stopDarkMode()
+        TweenService:Create(K4,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
+    end
+end)
+
 -- ─── SEPARATOR ─────────────────────────────────────────────────
 local Sep = Instance.new("Frame", Content)
 Sep.Size             = UDim2.new(1, -24, 0, 1)
-Sep.Position         = UDim2.new(0, 12, 0, 188)
+Sep.Position         = UDim2.new(0, 12, 0, 244)
 Sep.BackgroundColor3 = WHITE
 Sep.BorderSizePixel  = 0
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
 SaveFrame.Size               = UDim2.new(1, -24, 0, 40)
-SaveFrame.Position           = UDim2.new(0, 12, 0, 200)
+SaveFrame.Position           = UDim2.new(0, 12, 0, 256)
 SaveFrame.BackgroundTransparency = 1
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
@@ -494,7 +604,6 @@ task.spawn(function()
     while ScreenGui.Parent do
         t = t + 0.04
         local pulse = (math.sin(t) + 1) / 2
-        -- borde negro, glow pulsando via transparencia
         grimStroke.Transparency = 0.05 + pulse * 0.5
         task.wait(0.03)
     end
