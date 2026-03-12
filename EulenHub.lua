@@ -247,7 +247,6 @@ local function saveConfig()
             AutoSteal   = stealEnabled,
             AntiRagdoll = antiRagdollEnabled,
             XRAY        = unwalkEnabled,
-            Darkmode    = darkmodeEnabled,
         }))
     end)
 end
@@ -255,65 +254,11 @@ end
 local savedCfg = {}
 pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 
--- ─── DARK MODE (Solid Black Skybox) ────────────────────────────
-local darkmodeEnabled  = false
-local SKYBOX_ID        = "rbxassetid://120677415283673"
-local originalSky      = nil
-local originalAmbient  = nil
-local originalBrightness = nil
-local originalFogColor = nil
-
-local function startDarkmode()
-    pcall(function()
-        -- Guardar estado original del cielo
-        originalAmbient   = Lighting.Ambient
-        originalBrightness = Lighting.Brightness
-        originalFogColor  = Lighting.FogColor
-        -- Guardar Sky original si existe
-        local existingSky = Lighting:FindFirstChildOfClass("Sky")
-        if existingSky then
-            originalSky = existingSky
-            existingSky.Parent = nil
-        end
-        -- Insertar skybox negro
-        local newSky = Instance.new("Sky")
-        newSky.Name        = "KMoneyDarkSky"
-        newSky.SkyboxBk    = SKYBOX_ID
-        newSky.SkyboxDn    = SKYBOX_ID
-        newSky.SkyboxFt    = SKYBOX_ID
-        newSky.SkyboxLf    = SKYBOX_ID
-        newSky.SkyboxRt    = SKYBOX_ID
-        newSky.SkyboxUp    = SKYBOX_ID
-        newSky.Parent      = Lighting
-        -- Oscurecer ambiente
-        Lighting.Ambient   = Color3.fromRGB(0, 0, 0)
-        Lighting.Brightness = 0
-        Lighting.FogColor  = Color3.fromRGB(0, 0, 0)
-    end)
-end
-
-local function stopDarkmode()
-    pcall(function()
-        -- Eliminar skybox negro
-        local darkSky = Lighting:FindFirstChild("KMoneyDarkSky")
-        if darkSky then darkSky:Destroy() end
-        -- Restaurar sky original
-        if originalSky then
-            originalSky.Parent = Lighting
-            originalSky = nil
-        end
-        -- Restaurar valores originales
-        if originalAmbient   then Lighting.Ambient    = originalAmbient   end
-        if originalBrightness then Lighting.Brightness = originalBrightness end
-        if originalFogColor  then Lighting.FogColor   = originalFogColor  end
-    end)
-end
-
 -- ─── PALETA ────────────────────────────────────────────────────
 local WHITE      = Color3.fromRGB(255, 255, 255)
 local BLACK      = Color3.fromRGB(0, 0, 0)
 local TRANSPARENT = Color3.fromRGB(0, 0, 0)
-local FULL_HEIGHT = 371
+local FULL_HEIGHT = 315
 
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
@@ -480,31 +425,17 @@ T3.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 4: Dark Mode
-local T4,K4,S4,RS4 = makeToggleRow("Dark Mode", 178)
-if savedCfg.Darkmode then darkmodeEnabled=true; startDarkmode(); applyOn(T4,K4,S4,RS4) end
-T4.MouseButton1Click:Connect(function()
-    darkmodeEnabled = not darkmodeEnabled
-    if darkmodeEnabled then
-        startDarkmode()
-        TweenService:Create(K4,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
-    else
-        stopDarkmode()
-        TweenService:Create(K4,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
-    end
-end)
-
 -- ─── SEPARATOR ─────────────────────────────────────────────────
 local Sep = Instance.new("Frame", Content)
 Sep.Size             = UDim2.new(1, -24, 0, 1)
-Sep.Position         = UDim2.new(0, 12, 0, 244)
+Sep.Position         = UDim2.new(0, 12, 0, 188)
 Sep.BackgroundColor3 = WHITE
 Sep.BorderSizePixel  = 0
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
 SaveFrame.Size               = UDim2.new(1, -24, 0, 40)
-SaveFrame.Position           = UDim2.new(0, 12, 0, 256)
+SaveFrame.Position           = UDim2.new(0, 12, 0, 200)
 SaveFrame.BackgroundTransparency = 1
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
