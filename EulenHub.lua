@@ -259,8 +259,8 @@ local BLACK      = Color3.fromRGB(2, 2, 6)
 local DARKGRAY   = Color3.fromRGB(8, 8, 14)
 local CARD       = Color3.fromRGB(8, 8, 14)
 local CARD2      = Color3.fromRGB(16, 16, 18)
-local GHOST      = Color3.fromRGB(0, 0, 0)
-local GHOSTDIM   = Color3.fromRGB(0, 0, 0)
+local GHOST      = Color3.fromRGB(0, 220, 255)
+local GHOSTDIM   = Color3.fromRGB(0, 180, 220)
 local RED        = Color3.fromRGB(0, 0, 0)
 local REDDIM     = Color3.fromRGB(5, 5, 10)
 local FULL_HEIGHT = 315
@@ -321,7 +321,7 @@ MinBtn.Size                   = UDim2.new(0, 26, 0, 26)
 MinBtn.Position               = UDim2.new(1, -36, 0.5, -13)
 MinBtn.BackgroundColor3       = CARD
 MinBtn.Text                   = "—"
-MinBtn.TextColor3             = Color3.fromRGB(0,0,0)
+MinBtn.TextColor3             = Color3.fromRGB(0, 220, 255)
 MinBtn.Font                   = Enum.Font.GothamBold
 MinBtn.TextSize               = 13
 MinBtn.BorderSizePixel        = 0
@@ -354,7 +354,7 @@ local function makeToggleRow(labelText, yOffset)
     local Lbl = Instance.new("TextLabel", Row)
     Lbl.Size = UDim2.new(1,-70,1,0); Lbl.Position = UDim2.new(0,14,0,0)
     Lbl.BackgroundTransparency = 1; Lbl.Text = labelText
-    Lbl.TextColor3 = Color3.fromRGB(0,0,0); Lbl.Font = Enum.Font.GothamBold
+    Lbl.TextColor3 = Color3.fromRGB(0, 220, 255); Lbl.Font = Enum.Font.GothamBold
     Lbl.TextSize = 13; Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local Btn = Instance.new("TextButton", Row)
@@ -467,7 +467,7 @@ SaveBtn.BackgroundColor3 = REDDIM
 SaveBtn.Text             = "  SAVE CONFIG  "
 SaveBtn.Font             = Enum.Font.GothamBlack
 SaveBtn.TextSize         = 13
-SaveBtn.TextColor3       = Color3.fromRGB(0,0,0)
+SaveBtn.TextColor3       = Color3.fromRGB(0, 220, 255)
 SaveBtn.BorderSizePixel  = 0
 Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 8)
 Instance.new("UIGradient", SaveBtn).Color = ColorSequence.new({
@@ -521,7 +521,7 @@ task.spawn(function()
         grimStroke.Transparency = 0.05 + pulse * 0.65
         grimStroke.Color = Color3.fromRGB(0,0,0)
         TitleLbl.TextStrokeTransparency = 0.1 + pulse * 0.5
-        TitleLbl.TextColor3 = Color3.fromRGB(0,0,0)
+        TitleLbl.TextColor3 = Color3.fromRGB(0, 220, 255)
         task.wait(0.03)
     end
 end)
