@@ -307,8 +307,8 @@ Instance.new("UIGradient", TopLine).Color = ColorSequence.new({
 local TitleBar = Instance.new("Frame", Main)
 TitleBar.Size             = UDim2.new(1, 0, 0, 48)
 TitleBar.Position         = UDim2.new(0, 0, 0, 2)
-TitleBar.BackgroundColor3 = Color3.fromRGB(0,0,8)
-TitleBar.BackgroundTransparency = 0.35
+TitleBar.BackgroundColor3 = Color3.fromRGB(0,0,0)
+TitleBar.BackgroundTransparency = 1
 TitleBar.BorderSizePixel  = 0
 Instance.new("UIGradient", TitleBar).Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(16,14,14)),
