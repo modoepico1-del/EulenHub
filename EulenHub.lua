@@ -262,7 +262,15 @@ local function startDarkMode()
     saveLightingState()
     darkModeObjects = {}
 
-    -- Sky negro
+    -- Eliminar skies existentes
+    for _, child in pairs(Lighting:GetChildren()) do
+        if child:IsA("Sky") then
+            table.insert(darkModeObjects, {removed = true, instance = child, parent = Lighting})
+            child.Parent = nil
+        end
+    end
+
+    -- Solo sky negro, sin tocar nada mas del Lighting
     local sky = Instance.new("Sky")
     sky.Name                 = "BlackSky"
     sky.SkyboxBk             = "rbxassetid://2013298"
@@ -273,71 +281,26 @@ local function startDarkMode()
     sky.SkyboxUp             = "rbxassetid://2013298"
     sky.StarCount            = 0
     sky.CelestialBodiesShown = false
-    sky.SunAngularSize       = 21
-    sky.MoonAngularSize      = 11
     sky.Parent               = Lighting
     table.insert(darkModeObjects, sky)
 
-    -- Atmosphere oscura
-    local atmosphere = Instance.new("Atmosphere")
-    atmosphere.Name    = "BlackAtmosphere"
-    atmosphere.Density = 0.3
-    atmosphere.Offset  = 0.25
-    atmosphere.Color   = Color3.new(0.7803921699523926, 0.7803921699523926, 0.7803921699523926)
-    atmosphere.Decay   = Color3.new(0.4156862795352936, 0.43921568989753723, 0.4901960790157318)
-    atmosphere.Glare   = 0
-    atmosphere.Haze    = 0
-    atmosphere.Parent  = Lighting
-    table.insert(darkModeObjects, atmosphere)
-
-    -- Bloom
-    local bloom = Instance.new("BloomEffect")
-    bloom.Name      = "BlackBloom"
-    bloom.Enabled   = true
-    bloom.Intensity = 1
-    bloom.Size      = 24
-    bloom.Threshold = 2
-    bloom.Parent    = Lighting
-    table.insert(darkModeObjects, bloom)
-
-    -- SunRays
-    local sunRays = Instance.new("SunRaysEffect")
-    sunRays.Name      = "BlackSunRays"
-    sunRays.Enabled   = true
-    sunRays.Intensity = 0.01
-    sunRays.Spread    = 0.1
-    sunRays.Parent    = Lighting
-    table.insert(darkModeObjects, sunRays)
-
-    -- Propiedades de Lighting
-    Lighting.ClockTime               = 0
-    Lighting.Ambient                 = Color3.new(0, 0, 0)
-    Lighting.Brightness              = 1
-    Lighting.EnvironmentDiffuseScale = 1
-    Lighting.EnvironmentSpecularScale= 1
-    Lighting.GlobalShadows           = true
-    Lighting.OutdoorAmbient          = Color3.new(0, 0, 0)
-    Lighting.FogColor                = Color3.new(0, 0, 0)
-    Lighting.FogEnd                  = 10000
-    Lighting.FogStart                = 100
+    -- Quitar niebla para que el juego se vea mas brilloso
+    Lighting.FogStart = 10000
 end
 
 local function stopDarkMode()
     for _, obj in ipairs(darkModeObjects) do
-        pcall(function() obj:Destroy() end)
+        pcall(function()
+            if obj.removed then
+                obj.instance.Parent = obj.parent
+            else
+                obj:Destroy()
+            end
+        end)
     end
     darkModeObjects = {}
     pcall(function()
-        Lighting.ClockTime               = originalLighting.ClockTime or 14
-        Lighting.Ambient                 = originalLighting.Ambient or Color3.new(0,0,0)
-        Lighting.Brightness              = originalLighting.Brightness or 2
-        Lighting.EnvironmentDiffuseScale = originalLighting.EnvironmentDiffuseScale or 1
-        Lighting.EnvironmentSpecularScale= originalLighting.EnvironmentSpecularScale or 1
-        Lighting.GlobalShadows           = originalLighting.GlobalShadows ~= nil and originalLighting.GlobalShadows or true
-        Lighting.OutdoorAmbient          = originalLighting.OutdoorAmbient or Color3.new(0.5,0.5,0.5)
-        Lighting.FogColor                = originalLighting.FogColor or Color3.new(0.75,0.75,0.75)
-        Lighting.FogEnd                  = originalLighting.FogEnd or 100000
-        Lighting.FogStart                = originalLighting.FogStart or 0
+        Lighting.FogStart = originalLighting.FogStart or 0
     end)
 end
 
