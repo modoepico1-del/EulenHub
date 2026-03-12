@@ -521,7 +521,7 @@ task.spawn(function()
         grimStroke.Transparency = 0.05 + pulse * 0.65
         grimStroke.Color = Color3.fromRGB(0,0,0)
         TitleLbl.TextStrokeTransparency = 0.1 + pulse * 0.5
-        TitleLbl.TextColor3 = Color3.fromRGB(0, 220, 255)
+        TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
         task.wait(0.03)
     end
 end)
