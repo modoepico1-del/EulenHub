@@ -254,15 +254,10 @@ end
 local savedCfg = {}
 pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 
--- ─── COLORES GRIM REAPER ───────────────────────────────────────
-local BLACK      = Color3.fromRGB(2, 2, 6)
-local DARKGRAY   = Color3.fromRGB(8, 8, 14)
-local CARD       = Color3.fromRGB(8, 8, 14)
-local CARD2      = Color3.fromRGB(16, 16, 18)
-local GHOST      = Color3.fromRGB(0, 220, 255)
-local GHOSTDIM   = Color3.fromRGB(0, 180, 220)
-local RED        = Color3.fromRGB(0, 0, 0)
-local REDDIM     = Color3.fromRGB(5, 5, 10)
+-- ─── PALETA ────────────────────────────────────────────────────
+local WHITE      = Color3.fromRGB(255, 255, 255)
+local BLACK      = Color3.fromRGB(0, 0, 0)
+local TRANSPARENT = Color3.fromRGB(0, 0, 0)
 local FULL_HEIGHT = 315
 
 -- ─── GUI ───────────────────────────────────────────────────────
@@ -277,62 +272,66 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.DisplayOrder   = 999
 pcall(function() ScreenGui.Parent = CoreGui end)
 
+-- Main frame - 100% transparente
 local Main = Instance.new("Frame", ScreenGui)
-Main.Name             = "Main"
-Main.Size             = UDim2.new(0, 270, 0, FULL_HEIGHT)
-Main.Position         = UDim2.new(0.5, -135, 0.5, -157)
-Main.BackgroundColor3 = Color3.fromRGB(0,0,0)
-Main.BackgroundTransparency = 0.45
-Main.BorderSizePixel  = 0
-Main.ClipsDescendants = true
+Main.Name                 = "Main"
+Main.Size                 = UDim2.new(0, 270, 0, FULL_HEIGHT)
+Main.Position             = UDim2.new(0.5, -135, 0.5, -157)
+Main.BackgroundTransparency = 1
+Main.BorderSizePixel      = 0
+Main.ClipsDescendants     = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
--- Outer stroke - blood red
+-- Borde negro con glow neon
 local grimStroke = Instance.new("UIStroke", Main)
-grimStroke.Color     = RED
-grimStroke.Thickness = 2
+grimStroke.Color       = BLACK
+grimStroke.Thickness   = 2
+grimStroke.Transparency = 0
 
--- Top neon line
+-- Línea superior negra
 local TopLine = Instance.new("Frame", Main)
 TopLine.Size             = UDim2.new(1, 0, 0, 2)
-TopLine.BackgroundColor3 = RED
+TopLine.BackgroundColor3 = BLACK
 TopLine.BorderSizePixel  = 0
-Instance.new("UIGradient", TopLine).Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,10)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(220,220,255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,10)),
-})
 
--- Title bar
+-- Title bar - transparente
 local TitleBar = Instance.new("Frame", Main)
-TitleBar.Size             = UDim2.new(1, 0, 0, 48)
-TitleBar.Position         = UDim2.new(0, 0, 0, 2)
-TitleBar.BackgroundColor3 = Color3.fromRGB(0,0,0)
+TitleBar.Size               = UDim2.new(1, 0, 0, 48)
+TitleBar.Position           = UDim2.new(0, 0, 0, 2)
 TitleBar.BackgroundTransparency = 1
-TitleBar.BorderSizePixel  = 0
-Instance.new("UIGradient", TitleBar).Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(16,14,14)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(6,6,6)),
-})
+TitleBar.BorderSizePixel    = 0
 
--- Minimize button
+-- Título BLANCO
+local TitleLbl = Instance.new("TextLabel", TitleBar)
+TitleLbl.Size                   = UDim2.new(1, -46, 1, 0)
+TitleLbl.Position               = UDim2.new(0, 14, 0, 0)
+TitleLbl.BackgroundTransparency = 1
+TitleLbl.Text                   = "KMONEY HUB"
+TitleLbl.TextColor3             = WHITE
+TitleLbl.TextStrokeColor3       = BLACK
+TitleLbl.TextStrokeTransparency = 0
+TitleLbl.Font                   = Enum.Font.GothamBlack
+TitleLbl.TextSize               = 16
+TitleLbl.TextXAlignment         = Enum.TextXAlignment.Left
+
+-- Botón minimizar
 local MinBtn = Instance.new("TextButton", TitleBar)
-MinBtn.Size                   = UDim2.new(0, 26, 0, 26)
-MinBtn.Position               = UDim2.new(1, -36, 0.5, -13)
-MinBtn.BackgroundColor3       = CARD
-MinBtn.Text                   = "—"
-MinBtn.TextColor3             = Color3.fromRGB(0, 220, 255)
-MinBtn.Font                   = Enum.Font.GothamBold
-MinBtn.TextSize               = 13
-MinBtn.BorderSizePixel        = 0
+MinBtn.Size               = UDim2.new(0, 26, 0, 26)
+MinBtn.Position           = UDim2.new(1, -36, 0.5, -13)
+MinBtn.BackgroundTransparency = 1
+MinBtn.Text               = "—"
+MinBtn.TextColor3         = WHITE
+MinBtn.Font               = Enum.Font.GothamBold
+MinBtn.TextSize           = 13
+MinBtn.BorderSizePixel    = 0
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 local minStroke = Instance.new("UIStroke", MinBtn)
-minStroke.Color = REDDIM; minStroke.Thickness = 1; minStroke.Transparency = 0.4
+minStroke.Color = BLACK; minStroke.Thickness = 1.5; minStroke.Transparency = 0
 
 -- Content
 local Content = Instance.new("Frame", Main)
-Content.Size                   = UDim2.new(1, 0, 1, -52)
-Content.Position               = UDim2.new(0, 0, 0, 52)
+Content.Size                 = UDim2.new(1, 0, 1, -52)
+Content.Position             = UDim2.new(0, 0, 0, 52)
 Content.BackgroundTransparency = 1
 
 local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
@@ -340,52 +339,48 @@ local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
 -- ─── TOGGLE ROW HELPER ─────────────────────────────────────────
 local function makeToggleRow(labelText, yOffset)
     local Row = Instance.new("Frame", Content)
-    Row.Size             = UDim2.new(1, -24, 0, 46)
-    Row.Position         = UDim2.new(0, 12, 0, yOffset)
-    Row.BackgroundColor3 = CARD
-    Row.BorderSizePixel  = 0
+    Row.Size                 = UDim2.new(1, -24, 0, 46)
+    Row.Position             = UDim2.new(0, 12, 0, yOffset)
+    Row.BackgroundTransparency = 1
+    Row.BorderSizePixel      = 0
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 8)
 
-    Row.BackgroundTransparency = 0.5
-
     local rowStroke = Instance.new("UIStroke", Row)
-    rowStroke.Color = REDDIM; rowStroke.Thickness = 1; rowStroke.Transparency = 0.6
+    rowStroke.Color = BLACK; rowStroke.Thickness = 1.5; rowStroke.Transparency = 0
 
     local Lbl = Instance.new("TextLabel", Row)
     Lbl.Size = UDim2.new(1,-70,1,0); Lbl.Position = UDim2.new(0,14,0,0)
     Lbl.BackgroundTransparency = 1; Lbl.Text = labelText
-    Lbl.TextColor3 = Color3.fromRGB(0, 220, 255); Lbl.Font = Enum.Font.GothamBold
+    Lbl.TextColor3 = WHITE
+    Lbl.TextStrokeColor3 = BLACK; Lbl.TextStrokeTransparency = 0
+    Lbl.Font = Enum.Font.GothamBold
     Lbl.TextSize = 13; Lbl.TextXAlignment = Enum.TextXAlignment.Left
 
     local Btn = Instance.new("TextButton", Row)
     Btn.Size = UDim2.new(0,46,0,24); Btn.Position = UDim2.new(1,-56,0.5,-12)
-    Btn.BackgroundColor3 = Color3.fromRGB(8,8,10); Btn.Text = ""; Btn.BorderSizePixel = 0
+    Btn.BackgroundTransparency = 1; Btn.Text = ""; Btn.BorderSizePixel = 0
     Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
     local bStroke = Instance.new("UIStroke", Btn)
-    bStroke.Color = REDDIM; bStroke.Thickness = 1; bStroke.Transparency = 0.5
+    bStroke.Color = BLACK; bStroke.Thickness = 1.5; bStroke.Transparency = 0
 
     local Knob = Instance.new("Frame", Btn)
     Knob.Size = UDim2.new(0,18,0,18); Knob.Position = UDim2.new(0,3,0.5,-9)
-    Knob.BackgroundColor3 = Color3.fromRGB(8,8,14); Knob.BorderSizePixel = 0
+    Knob.BackgroundColor3 = WHITE; Knob.BorderSizePixel = 0
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1,0)
+    local kStroke = Instance.new("UIStroke", Knob)
+    kStroke.Color = BLACK; kStroke.Thickness = 1; kStroke.Transparency = 0
 
     return Btn, Knob, bStroke, rowStroke
 end
 
 local function applyOn(b,k,s,rs)
-    b.BackgroundColor3 = Color3.fromRGB(0,0,0)
     k.Position         = UDim2.new(1,-21,0.5,-9)
-    k.BackgroundColor3 = Color3.fromRGB(0,0,0)
-    s.Color = RED; s.Transparency = 0
-    rs.Color = RED; rs.Transparency = 0.2
+    k.BackgroundColor3 = BLACK
 end
 
 local function applyOff(b,k,s,rs)
-    b.BackgroundColor3 = Color3.fromRGB(8,8,10)
     k.Position         = UDim2.new(0,3,0.5,-9)
-    k.BackgroundColor3 = Color3.fromRGB(50,50,55)
-    s.Color = REDDIM; s.Transparency = 0.5
-    rs.Color = REDDIM; rs.Transparency = 0.6
+    k.BackgroundColor3 = WHITE
 end
 
 -- ROW 1: Auto Steal
@@ -395,14 +390,10 @@ T1.MouseButton1Click:Connect(function()
     stealEnabled = not stealEnabled
     if stealEnabled then
         startAutoSteal()
-        TweenService:Create(T1,ti,{BackgroundColor3=Color3.fromRGB(0,0,0)}):Play()
-        TweenService:Create(K1,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=GHOST}):Play()
-        S1.Color=RED; S1.Transparency=0; RS1.Color=RED; RS1.Transparency=0.2
+        TweenService:Create(K1,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
     else
         stopAutoSteal()
-        TweenService:Create(T1,ti,{BackgroundColor3=Color3.fromRGB(8,8,10)}):Play()
-        TweenService:Create(K1,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,50,55)}):Play()
-        S1.Color=REDDIM; S1.Transparency=0.5; RS1.Color=REDDIM; RS1.Transparency=0.6
+        TweenService:Create(K1,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
     end
 end)
 
@@ -413,14 +404,10 @@ T2.MouseButton1Click:Connect(function()
     antiRagdollEnabled = not antiRagdollEnabled
     if antiRagdollEnabled then
         task.wait(0.5); setupAntiRagdoll(character)
-        TweenService:Create(T2,ti,{BackgroundColor3=Color3.fromRGB(0,0,0)}):Play()
-        TweenService:Create(K2,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=GHOST}):Play()
-        S2.Color=RED; S2.Transparency=0; RS2.Color=RED; RS2.Transparency=0.2
+        TweenService:Create(K2,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
     else
         cleanupRagdoll(); disconnectRemote()
-        TweenService:Create(T2,ti,{BackgroundColor3=Color3.fromRGB(8,8,10)}):Play()
-        TweenService:Create(K2,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,50,55)}):Play()
-        S2.Color=REDDIM; S2.Transparency=0.5; RS2.Color=REDDIM; RS2.Transparency=0.6
+        TweenService:Create(K2,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
     end
 end)
 
@@ -431,14 +418,10 @@ T3.MouseButton1Click:Connect(function()
     unwalkEnabled = not unwalkEnabled
     if unwalkEnabled then
         startUnwalk()
-        TweenService:Create(T3,ti,{BackgroundColor3=Color3.fromRGB(0,0,0)}):Play()
-        TweenService:Create(K3,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=GHOST}):Play()
-        S3.Color=RED; S3.Transparency=0; RS3.Color=RED; RS3.Transparency=0.2
+        TweenService:Create(K3,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
     else
         stopUnwalk()
-        TweenService:Create(T3,ti,{BackgroundColor3=Color3.fromRGB(8,8,10)}):Play()
-        TweenService:Create(K3,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.fromRGB(50,50,55)}):Play()
-        S3.Color=REDDIM; S3.Transparency=0.5; RS3.Color=REDDIM; RS3.Transparency=0.6
+        TweenService:Create(K3,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
     end
 end)
 
@@ -446,41 +429,34 @@ end)
 local Sep = Instance.new("Frame", Content)
 Sep.Size             = UDim2.new(1, -24, 0, 1)
 Sep.Position         = UDim2.new(0, 12, 0, 188)
-Sep.BackgroundColor3 = RED
+Sep.BackgroundColor3 = WHITE
 Sep.BorderSizePixel  = 0
-Sep.BackgroundTransparency = 0.5
-Instance.new("UIGradient", Sep).Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0,0,0)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(220,220,255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(0,0,0)),
-})
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
-SaveFrame.Size                   = UDim2.new(1, -24, 0, 40)
-SaveFrame.Position               = UDim2.new(0, 12, 0, 200)
+SaveFrame.Size               = UDim2.new(1, -24, 0, 40)
+SaveFrame.Position           = UDim2.new(0, 12, 0, 200)
 SaveFrame.BackgroundTransparency = 1
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
-SaveBtn.Size             = UDim2.new(1, 0, 1, 0)
-SaveBtn.BackgroundColor3 = REDDIM
-SaveBtn.Text             = "  SAVE CONFIG  "
-SaveBtn.Font             = Enum.Font.GothamBlack
-SaveBtn.TextSize         = 13
-SaveBtn.TextColor3       = Color3.fromRGB(0, 220, 255)
-SaveBtn.BorderSizePixel  = 0
+SaveBtn.Size               = UDim2.new(1, 0, 1, 0)
+SaveBtn.BackgroundTransparency = 1
+SaveBtn.Text               = "SAVE CONFIG"
+SaveBtn.Font               = Enum.Font.GothamBlack
+SaveBtn.TextSize           = 13
+SaveBtn.TextColor3         = WHITE
+SaveBtn.TextStrokeColor3   = BLACK
+SaveBtn.TextStrokeTransparency = 0
+SaveBtn.BorderSizePixel    = 0
 Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 8)
-Instance.new("UIGradient", SaveBtn).Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(15,15,30)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60,60,120)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(15,15,30)),
-})
+local saveStroke = Instance.new("UIStroke", SaveBtn)
+saveStroke.Color = BLACK; saveStroke.Thickness = 1.5; saveStroke.Transparency = 0
 
 SaveBtn.MouseButton1Click:Connect(function()
     saveConfig()
-    SaveBtn.Text = "  SAVED!  "
+    SaveBtn.Text = "SAVED!"
     task.wait(1)
-    SaveBtn.Text = "  SAVE CONFIG  "
+    SaveBtn.Text = "SAVE CONFIG"
 end)
 
 -- ─── DRAGGABLE ─────────────────────────────────────────────────
@@ -512,16 +488,14 @@ MinBtn.MouseButton1Click:Connect(function()
     }):Play()
 end)
 
--- ─── NEON PULSE (dorado luxury pulsando) ───────────────────────
+-- ─── NEON PULSE ────────────────────────────────────────────────
 task.spawn(function()
     local t = 0
     while ScreenGui.Parent do
         t = t + 0.04
         local pulse = (math.sin(t) + 1) / 2
-        grimStroke.Transparency = 0.05 + pulse * 0.65
-        grimStroke.Color = Color3.fromRGB(0,0,0)
-        TitleLbl.TextStrokeTransparency = 0.1 + pulse * 0.5
-        TitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+        -- borde negro, glow pulsando via transparencia
+        grimStroke.Transparency = 0.05 + pulse * 0.5
         task.wait(0.03)
     end
 end)
