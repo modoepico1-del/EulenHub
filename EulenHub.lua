@@ -317,7 +317,7 @@ local function createESP(plr)
     hitbox.Name = "NightESP"
     hitbox.Adornee = charHrp
     hitbox.Size = Vector3.new(4, 6, 2)
-    hitbox.Color3 = Color3.fromRGB(128, 0, 128)
+    hitbox.Color3 = Color3.fromRGB(160, 0, 255)  -- ← color actualizado
     hitbox.Transparency = 0.5
     hitbox.ZIndex = 10
     hitbox.AlwaysOnTop = true
@@ -563,20 +563,8 @@ T4.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 5: GALAXY (sin funciones por ahora)
-local galaxyEnabled = false
-local TG,KG,SG,RSG = makeToggleRow("GALAXY", 234)
-TG.MouseButton1Click:Connect(function()
-    galaxyEnabled = not galaxyEnabled
-    if galaxyEnabled then
-        TweenService:Create(KG,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
-    else
-        TweenService:Create(KG,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
-    end
-end)
-
--- ROW 6: ESP
-local T5,K5,S5,RS5 = makeToggleRow("ESP", 290)
+-- ROW 5: ESP  (debajo de Dark Mode)
+local T5,K5,S5,RS5 = makeToggleRow("ESP", 234)
 if savedCfg.ESP then espEnabled=true; enableESP(); applyOn(T5,K5,S5,RS5) end
 T5.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
@@ -586,6 +574,18 @@ T5.MouseButton1Click:Connect(function()
     else
         disableESP()
         TweenService:Create(K5,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
+    end
+end)
+
+-- ROW 6: GALAXY (sin funciones por ahora)
+local galaxyEnabled = false
+local TG,KG,SG,RSG = makeToggleRow("GALAXY", 290)
+TG.MouseButton1Click:Connect(function()
+    galaxyEnabled = not galaxyEnabled
+    if galaxyEnabled then
+        TweenService:Create(KG,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
+    else
+        TweenService:Create(KG,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
     end
 end)
 
