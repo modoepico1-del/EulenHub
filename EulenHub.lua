@@ -302,13 +302,9 @@ local function startGalaxy()
     galaxySky.SkyboxLf             = "rbxassetid://14940021683"
     galaxySky.SkyboxRt             = "rbxassetid://14940021683"
     galaxySky.SkyboxUp             = "rbxassetid://14940021683"
-    galaxySky.SkyboxOrientation    = Vector3.new(0, 0, 0)
-    galaxySky.SunTextureId         = "rbxasset://sky/sun.jpg"
-    galaxySky.SunAngularSize       = 11
-    galaxySky.MoonTextureId        = "rbxassetid://14940021683"
-    galaxySky.MoonAngularSize      = 12
-    galaxySky.StarCount            = 3000
-    galaxySky.CelestialBodiesShown = true
+    galaxySky.CelestialBodiesShown = false
+    galaxySky.SunAngularSize       = 0
+    galaxySky.MoonAngularSize      = 0
     galaxySky.Parent               = Lighting
 end
 
