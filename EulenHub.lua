@@ -6,10 +6,6 @@ local Lighting     = game:GetService("Lighting")
 local Players      = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
--- ══════════════════════════════════════
---  LIMPIAR TODO
--- ══════════════════════════════════════
-
 for _, v in ipairs(Lighting:GetChildren()) do
     if v:IsA("ColorCorrectionEffect")
     or v:IsA("BloomEffect")
@@ -22,52 +18,29 @@ for _, v in ipairs(Lighting:GetChildren()) do
     end
 end
 
--- ══════════════════════════════════════
---  ILUMINACION BASE (identica a la foto)
--- ══════════════════════════════════════
-
-Lighting.Ambient              = Color3.fromRGB(160, 160, 160)  -- gris claro parejo
-Lighting.OutdoorAmbient       = Color3.fromRGB(170, 170, 170)  -- exterior igual
-Lighting.Brightness           = 2.0                            -- brillo normal de dia
-Lighting.ClockTime            = 14.0                           -- tarde, sol lateral suave
+Lighting.Ambient              = Color3.fromRGB(130, 120, 160)
+Lighting.OutdoorAmbient       = Color3.fromRGB(140, 125, 170)
+Lighting.Brightness           = 1.3                            -- brillo reducido
+Lighting.ClockTime            = 14.0
 Lighting.GeographicLatitude   = 41.7
-Lighting.GlobalShadows        = false                          -- sin sombras = colores planos
+Lighting.GlobalShadows        = false
 Lighting.ShadowSoftness       = 0.0
-Lighting.FogEnd               = 9999                           -- sin niebla
+Lighting.FogEnd               = 9999
 Lighting.FogStart             = 9998
-Lighting.FogColor              = Color3.fromRGB(200, 220, 255)
-Lighting.ExposureCompensation = 0.0                            -- sin sobreexposicion
-
--- ══════════════════════════════════════
---  COLOR CORRECTION (solo saturacion)
--- ══════════════════════════════════════
+Lighting.FogColor             = Color3.fromRGB(180, 160, 220)
+Lighting.ExposureCompensation = -0.2                           -- un poco menos expuesto
 
 local CC = Instance.new("ColorCorrectionEffect")
-CC.Brightness   =  0.0              -- sin tocar el brillo
-CC.Contrast     =  0.20             -- contraste ligero
-CC.Saturation   =  1.40             -- colores vivos sin exagerar
-CC.TintColor    = Color3.fromRGB(255, 255, 255)  -- sin tinte, colores originales
+CC.Brightness   =  0.0
+CC.Contrast     =  0.20
+CC.Saturation   =  1.40
+CC.TintColor    = Color3.fromRGB(210, 185, 255)  -- violeta suave como la foto
 CC.Parent       = Lighting
-
--- ══════════════════════════════════════
---  SIN BLOOM, SIN EFECTOS
--- ══════════════════════════════════════
-
--- No se agrega bloom ni atmosfera
--- para que los colores se vean exacto a la foto
-
--- ══════════════════════════════════════
---  CIELO SIMPLE DE DIA
--- ══════════════════════════════════════
 
 local Sky = Instance.new("Sky")
 Sky.StarCount            = 0
 Sky.CelestialBodiesShown = true
 Sky.Parent               = Lighting
-
--- ══════════════════════════════════════
---  MENSAJE
--- ══════════════════════════════════════
 
 local lp  = Players.LocalPlayer
 local sg  = Instance.new("ScreenGui")
@@ -102,4 +75,4 @@ TweenService:Create(lbl,
 
 task.delay(3.2, function() sg:Destroy() end)
 
-print("DEMONTIME | Iluminacion limpia cargada")
+print("DEMONTIME | Iluminacion violeta cargada")
