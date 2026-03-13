@@ -287,6 +287,35 @@ local function stopDarkMode()
     pcall(function() Lighting.FogStart = originalLighting.FogStart or 0 end)
 end
 
+-- ─── GALAXY ────────────────────────────────────────────────────
+local galaxyEnabled = false
+local galaxySky     = nil
+
+local function startGalaxy()
+    for _, child in pairs(Lighting:GetChildren()) do
+        if child:IsA("Sky") then child:Destroy() end
+    end
+    galaxySky = Instance.new("Sky")
+    galaxySky.SkyboxBk             = "rbxassetid://14940021683"
+    galaxySky.SkyboxDn             = "rbxassetid://14940021683"
+    galaxySky.SkyboxFt             = "rbxassetid://14940021683"
+    galaxySky.SkyboxLf             = "rbxassetid://14940021683"
+    galaxySky.SkyboxRt             = "rbxassetid://14940021683"
+    galaxySky.SkyboxUp             = "rbxassetid://14940021683"
+    galaxySky.SkyboxOrientation    = Vector3.new(0, 0, 0)
+    galaxySky.SunTextureId         = "rbxasset://sky/sun.jpg"
+    galaxySky.SunAngularSize       = 11
+    galaxySky.MoonTextureId        = "rbxassetid://14940021683"
+    galaxySky.MoonAngularSize      = 12
+    galaxySky.StarCount            = 3000
+    galaxySky.CelestialBodiesShown = true
+    galaxySky.Parent               = Lighting
+end
+
+local function stopGalaxy()
+    if galaxySky then galaxySky:Destroy(); galaxySky = nil end
+end
+
 -- ─── ESP ───────────────────────────────────────────────────────
 local espEnabled     = false
 local espObjects     = {}
@@ -366,6 +395,7 @@ local function saveConfig()
             AntiRagdoll = antiRagdollEnabled,
             XRAY        = unwalkEnabled,
             DarkMode    = darkModeEnabled,
+            Galaxy      = galaxyEnabled,
             ESP         = espEnabled,
         }))
     end)
@@ -377,7 +407,7 @@ pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 -- ─── CONSTANTES ────────────────────────────────────────────────
 local WHITE       = Color3.fromRGB(255, 255, 255)
 local BLACK       = Color3.fromRGB(0, 0, 0)
-local FULL_HEIGHT = 428
+local FULL_HEIGHT = 484
 
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
@@ -560,8 +590,22 @@ T4.MouseButton1Click:Connect(function()
     end
 end)
 
--- ─── ROW 5: ESP ────────────────────────────────────────────────
-local T5,K5,S5,RS5 = makeToggleRow("ESP", 234)
+-- ─── ROW 5: Galaxy ─────────────────────────────────────────────
+local TG,KG,SG,RSG = makeToggleRow("Galaxy", 234)
+if savedCfg.Galaxy then galaxyEnabled = true; startGalaxy(); applyOn(TG,KG) end
+TG.MouseButton1Click:Connect(function()
+    galaxyEnabled = not galaxyEnabled
+    if galaxyEnabled then
+        startGalaxy()
+        TweenService:Create(KG,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
+    else
+        stopGalaxy()
+        TweenService:Create(KG,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
+    end
+end)
+
+-- ─── ROW 6: ESP ────────────────────────────────────────────────
+local T5,K5,S5,RS5 = makeToggleRow("ESP", 290)
 if savedCfg.ESP then espEnabled = true; enableESP(); applyOn(T5,K5) end
 T5.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
@@ -577,14 +621,14 @@ end)
 -- ─── SEPARATOR ─────────────────────────────────────────────────
 local Sep = Instance.new("Frame", Content)
 Sep.Size             = UDim2.new(1, -24, 0, 1)
-Sep.Position         = UDim2.new(0, 12, 0, 300)
+Sep.Position         = UDim2.new(0, 12, 0, 356)
 Sep.BackgroundColor3 = WHITE
 Sep.BorderSizePixel  = 0
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
 SaveFrame.Size                   = UDim2.new(1, -24, 0, 40)
-SaveFrame.Position               = UDim2.new(0, 12, 0, 312)
+SaveFrame.Position               = UDim2.new(0, 12, 0, 368)
 SaveFrame.BackgroundTransparency = 1
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
