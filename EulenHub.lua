@@ -1,18 +1,7 @@
--- ╔══════════════════════════════════════╗
--- ║           DEMONTIME HUB              ║
--- ╚══════════════════════════════════════╝
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-
-local HubConfig = {
-    Name    = "DEMONTIME",
-    NeonRed = Color3.fromRGB(255, 0, 0),
-    BgDark  = Color3.fromRGB(0, 0, 0),
-    TitleBg = Color3.fromRGB(0, 0, 0),
-}
 
 if CoreGui:FindFirstChild("DEMONTIME_GUI") then
     CoreGui:FindFirstChild("DEMONTIME_GUI"):Destroy()
@@ -61,8 +50,8 @@ MainCorner.Parent = MainFrame
 
 local function addNeonBorder(parent, thickness, color)
     local glow = Instance.new("Frame")
-    glow.Size               = UDim2.new(1, thickness * 6, 1, thickness * 6)
-    glow.Position           = UDim2.new(0, -thickness * 3, 0, -thickness * 3)
+    glow.Size               = UDim2.new(1, thickness*6, 1, thickness*6)
+    glow.Position           = UDim2.new(0, -thickness*3, 0, -thickness*3)
     glow.BackgroundColor3   = color
     glow.BackgroundTransparency = 0.72
     glow.BorderSizePixel    = 0
@@ -71,10 +60,9 @@ local function addNeonBorder(parent, thickness, color)
     local gc = Instance.new("UICorner")
     gc.CornerRadius = UDim.new(0, 14)
     gc.Parent = glow
-
     local mid = Instance.new("Frame")
-    mid.Size               = UDim2.new(1, thickness * 3, 1, thickness * 3)
-    mid.Position           = UDim2.new(0, -thickness * 1.5, 0, -thickness * 1.5)
+    mid.Size               = UDim2.new(1, thickness*3, 1, thickness*3)
+    mid.Position           = UDim2.new(0, -thickness*1.5, 0, -thickness*1.5)
     mid.BackgroundColor3   = color
     mid.BackgroundTransparency = 0.50
     mid.BorderSizePixel    = 0
@@ -83,7 +71,6 @@ local function addNeonBorder(parent, thickness, color)
     local mc = Instance.new("UICorner")
     mc.CornerRadius = UDim.new(0, 12)
     mc.Parent = mid
-
     local stroke = Instance.new("UIStroke")
     stroke.Color           = color
     stroke.Thickness       = thickness
@@ -92,7 +79,7 @@ local function addNeonBorder(parent, thickness, color)
     stroke.Parent          = parent
 end
 
-addNeonBorder(MainFrame, 2, HubConfig.NeonRed)
+addNeonBorder(MainFrame, 2, Color3.fromRGB(255, 0, 0))
 
 local TitleBar = Instance.new("Frame")
 TitleBar.Size              = UDim2.new(1, 0, 0, 42)
@@ -109,7 +96,7 @@ TitleCorner.Parent = TitleBar
 local TitleLine = Instance.new("Frame")
 TitleLine.Size             = UDim2.new(1, 0, 0, 2)
 TitleLine.Position         = UDim2.new(0, 0, 1, -2)
-TitleLine.BackgroundColor3 = HubConfig.NeonRed
+TitleLine.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 TitleLine.BorderSizePixel  = 0
 TitleLine.ZIndex           = 4
 TitleLine.Parent           = TitleBar
@@ -117,7 +104,7 @@ TitleLine.Parent           = TitleBar
 local lineGlow = Instance.new("Frame")
 lineGlow.Size              = UDim2.new(1, 0, 0, 8)
 lineGlow.Position          = UDim2.new(0, 0, 1, -5)
-lineGlow.BackgroundColor3  = HubConfig.NeonRed
+lineGlow.BackgroundColor3  = Color3.fromRGB(255, 0, 0)
 lineGlow.BackgroundTransparency = 0.6
 lineGlow.BorderSizePixel   = 0
 lineGlow.ZIndex            = 3
@@ -164,25 +151,16 @@ CloseBtnStroke.Transparency = 0.1
 CloseBtnStroke.Parent       = CloseBtn
 
 CloseBtn.MouseEnter:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Color3.fromRGB(180, 0, 0),
-        TextColor3       = Color3.fromRGB(255, 255, 255)
-    }):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(180,0,0), TextColor3 = Color3.fromRGB(255,255,255)}):Play()
 end)
 CloseBtn.MouseLeave:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        TextColor3       = Color3.fromRGB(255, 0, 0)
-    }):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0,0,0), TextColor3 = Color3.fromRGB(255,0,0)}):Play()
 end)
-
 CloseBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 480, 0, 0)
-    }):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0,480,0,0)}):Play()
     task.delay(0.27, function()
         MainFrame.Visible = false
-        MainFrame.Size    = UDim2.new(0, 480, 0, 320)
+        MainFrame.Size    = UDim2.new(0,480,0,320)
     end)
 end)
 
@@ -207,76 +185,64 @@ Placeholder.Parent             = ContentArea
 
 ToggleBtn.MouseButton1Click:Connect(function()
     if MainFrame.Visible then
-        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Size = UDim2.new(0, 480, 0, 0)
-        }):Play()
+        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0,480,0,0)}):Play()
         task.delay(0.27, function()
             MainFrame.Visible = false
-            MainFrame.Size    = UDim2.new(0, 480, 0, 320)
+            MainFrame.Size    = UDim2.new(0,480,0,320)
         end)
     else
-        MainFrame.Size    = UDim2.new(0, 480, 0, 0)
+        MainFrame.Size    = UDim2.new(0,480,0,0)
         MainFrame.Visible = true
-        TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 480, 0, 320)
-        }):Play()
+        TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0,480,0,320)}):Play()
     end
 end)
 
 task.spawn(function()
     while ScreenGui.Parent do
-        TweenService:Create(TitleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.6 }):Play()
+        TweenService:Create(TitleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6}):Play()
         task.wait(1.2)
-        TweenService:Create(TitleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.0 }):Play()
+        TweenService:Create(TitleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.0}):Play()
         task.wait(1.2)
     end
 end)
 
 task.spawn(function()
     while ScreenGui.Parent do
-        TweenService:Create(TitleLine, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.55 }):Play()
+        TweenService:Create(TitleLine, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.55}):Play()
         task.wait(1.0)
-        TweenService:Create(TitleLine, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.0 }):Play()
+        TweenService:Create(TitleLine, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.0}):Play()
         task.wait(1.0)
     end
 end)
 
 task.spawn(function()
     while ScreenGui.Parent do
-        TweenService:Create(ToggleStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.6 }):Play()
+        TweenService:Create(ToggleStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6}):Play()
         task.wait(1.0)
-        TweenService:Create(ToggleStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.0 }):Play()
+        TweenService:Create(ToggleStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.0}):Play()
         task.wait(1.0)
     end
 end)
 
 MainFrame.Size = UDim2.new(0, 480, 0, 0)
-TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 480, 0, 320)
-}):Play()
+TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0,480,0,320)}):Play()
 
 local dragging, dragStart, startPos = false, nil, nil
-
 TitleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging  = true
+        dragging = true
         dragStart = input.Position
         startPos  = MainFrame.Position
     end
 end)
-
 TitleBar.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
     end
 end)
