@@ -593,16 +593,16 @@ local function startGalaxy()
     end
     -- Crear sky galaxia
     galaxySky = Instance.new("Sky")
-    galaxySky.SkyboxBk             = "rbxassetid://14939997943"
-    galaxySky.SkyboxDn             = "rbxassetid://14939714090"
-    galaxySky.SkyboxFt             = "rbxassetid://14939997943"
-    galaxySky.SkyboxLf             = "rbxassetid://14939997943"
-    galaxySky.SkyboxRt             = "rbxassetid://14939997943"
-    galaxySky.SkyboxUp             = "rbxassetid://14940000257"
+    galaxySky.SkyboxBk             = "rbxassetid://14940021683"
+    galaxySky.SkyboxDn             = "rbxassetid://14940021683"
+    galaxySky.SkyboxFt             = "rbxassetid://14940021683"
+    galaxySky.SkyboxLf             = "rbxassetid://14940021683"
+    galaxySky.SkyboxRt             = "rbxassetid://14940021683"
+    galaxySky.SkyboxUp             = "rbxassetid://14940021683"
     galaxySky.SkyboxOrientation    = Vector3.new(0, 0, 0)
     galaxySky.SunTextureId         = "rbxasset://sky/sun.jpg"
     galaxySky.SunAngularSize       = 11
-    galaxySky.MoonTextureId        = "rbxassetid://14940062085"
+    galaxySky.MoonTextureId        = "rbxassetid://14940021683"
     galaxySky.MoonAngularSize      = 12
     galaxySky.StarCount            = 3000
     galaxySky.CelestialBodiesShown = true
