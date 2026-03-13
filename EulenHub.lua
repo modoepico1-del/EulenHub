@@ -1,9 +1,9 @@
 -- ╔══════════════════════════════════════╗
--- ║    DEMONTIME - ILUMINACION EXACTA    ║
+-- ║   DEMONTIME - ILUMINACION GALAXY     ║
 -- ╚══════════════════════════════════════╝
 
-local Lighting    = game:GetService("Lighting")
-local Players     = game:GetService("Players")
+local Lighting     = game:GetService("Lighting")
+local Players      = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 -- ══════════════════════════════════════
@@ -23,62 +23,86 @@ for _, v in ipairs(Lighting:GetChildren()) do
 end
 
 -- ══════════════════════════════════════
---  ILUMINACION BASE (luz plana y pareja)
+--  ILUMINACION BASE GALAXY
 -- ══════════════════════════════════════
 
-Lighting.Ambient              = Color3.fromRGB(200, 200, 200)  -- ambiente MUY claro
-Lighting.OutdoorAmbient       = Color3.fromRGB(210, 210, 210)  -- exterior blanquecino
-Lighting.Brightness           = 4.0                            -- maximo brillo
-Lighting.ClockTime            = 12.0                           -- mediodia exacto
-Lighting.GeographicLatitude   = 0                              -- ecuador = sol directo
-Lighting.GlobalShadows        = false                          -- sin sombras = look cartoon
-Lighting.ShadowSoftness       = 0.0
-Lighting.FogEnd               = 9999                           -- sin niebla
-Lighting.FogStart             = 9998
-Lighting.ExposureCompensation = 1.0                            -- maxima exposicion
+Lighting.Ambient              = Color3.fromRGB(40, 20, 80)    -- morado galaxia oscuro
+Lighting.OutdoorAmbient       = Color3.fromRGB(50, 25, 100)   -- exterior violeta profundo
+Lighting.Brightness           = 1.4                            -- brillo moderado, no cega
+Lighting.ClockTime            = 0.0                            -- medianoche
+Lighting.GeographicLatitude   = 41.7
+Lighting.GlobalShadows        = true
+Lighting.ShadowSoftness       = 0.8
+Lighting.FogEnd               = 600
+Lighting.FogStart             = 200
+Lighting.FogColor             = Color3.fromRGB(20, 5, 50)     -- niebla morada espacial
+Lighting.ExposureCompensation = 0.2                            -- exposicion suave
 
 -- ══════════════════════════════════════
---  COLOR CORRECTION
+--  COLOR CORRECTION (look galaxia)
 -- ══════════════════════════════════════
 
 local CC = Instance.new("ColorCorrectionEffect")
-CC.Brightness   =  0.10     -- mas claro todavia
-CC.Contrast     =  0.50     -- contraste que hace los colores nítidos
-CC.Saturation   =  1.8      -- saturacion muy alta = colores cartoon puros
-CC.TintColor    = Color3.fromRGB(255, 255, 255)  -- sin tinte, colores puros
+CC.Brightness   =  0.02
+CC.Contrast     =  0.40     -- contraste medio para ver bien
+CC.Saturation   =  0.90     -- saturado pero no exagerado
+CC.TintColor    = Color3.fromRGB(170, 140, 255)  -- tinte purpura galaxia
 CC.Parent       = Lighting
 
 -- ══════════════════════════════════════
---  BLOOM SUAVE
+--  BLOOM (brillo neon suave)
 -- ══════════════════════════════════════
 
 local Bloom = Instance.new("BloomEffect")
-Bloom.Intensity = 0.3
-Bloom.Size      = 10
-Bloom.Threshold = 0.98       -- solo en lo muy brillante
+Bloom.Intensity = 0.5        -- bloom suave, no excesivo
+Bloom.Size      = 20
+Bloom.Threshold = 0.80
 Bloom.Parent    = Lighting
 
 -- ══════════════════════════════════════
---  ATMOSFERA MINIMA (cielo azul vivo)
+--  ATMOSFERA ESPACIAL
 -- ══════════════════════════════════════
 
 local Atmo = Instance.new("Atmosphere")
-Atmo.Density = 0.05           -- aire completamente limpio
-Atmo.Offset  = 0.0
-Atmo.Color   = Color3.fromRGB(100, 170, 255)   -- azul cielo vivo
-Atmo.Decay   = Color3.fromRGB(60, 120, 220)
-Atmo.Glare   = 0.1
-Atmo.Haze    = 0.0            -- cero neblina
+Atmo.Density = 0.35
+Atmo.Offset  = 0.20
+Atmo.Color   = Color3.fromRGB(60, 20, 120)    -- purpura espacial
+Atmo.Decay   = Color3.fromRGB(15, 5, 40)      -- decay muy oscuro
+Atmo.Glare   = 0.0
+Atmo.Haze    = 1.2
 Atmo.Parent  = Lighting
 
 -- ══════════════════════════════════════
---  CIELO
+--  CIELO ESTRELLADO GALAXY
 -- ══════════════════════════════════════
 
+local oldSky = Lighting:FindFirstChildOfClass("Sky")
+if oldSky then oldSky:Destroy() end
+
 local Sky = Instance.new("Sky")
-Sky.StarCount            = 0
+Sky.StarCount            = 8000   -- muchas estrellas
 Sky.CelestialBodiesShown = true
 Sky.Parent               = Lighting
+
+-- ══════════════════════════════════════
+--  PUNTO DE LUZ GALAXY (PointLight en el sol)
+-- ══════════════════════════════════════
+
+-- Luz ambiental extra con color galaxia
+local sunPart = Instance.new("Part")
+sunPart.Anchored        = true
+sunPart.CanCollide      = false
+sunPart.Transparency    = 1
+sunPart.Size            = Vector3.new(1, 1, 1)
+sunPart.Position        = Vector3.new(0, 500, 0)
+sunPart.Parent          = workspace
+
+local galaxyLight = Instance.new("PointLight")
+galaxyLight.Color       = Color3.fromRGB(130, 60, 255)  -- purpura galaxia
+galaxyLight.Brightness  = 2.0
+galaxyLight.Range       = 999
+galaxyLight.Shadows     = false
+galaxyLight.Parent      = sunPart
 
 -- ══════════════════════════════════════
 --  MENSAJE
@@ -90,11 +114,11 @@ sg.ResetOnSpawn = false
 sg.Parent       = lp.PlayerGui
 
 local lbl = Instance.new("TextLabel")
-lbl.Text             = "DEMONTIME | Iluminacion cargada"
-lbl.Size             = UDim2.new(0, 300, 0, 32)
-lbl.Position         = UDim2.new(0.5, -150, 0, 14)
+lbl.Text             = "DEMONTIME | Galaxy activado"
+lbl.Size             = UDim2.new(0, 280, 0, 32)
+lbl.Position         = UDim2.new(0.5, -140, 0, 14)
 lbl.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-lbl.TextColor3       = Color3.fromRGB(255, 0, 0)
+lbl.TextColor3       = Color3.fromRGB(180, 80, 255)
 lbl.TextSize         = 13
 lbl.Font             = Enum.Font.GothamBlack
 lbl.BorderSizePixel  = 0
@@ -105,7 +129,7 @@ lc.CornerRadius = UDim.new(0, 6)
 lc.Parent = lbl
 
 local ls = Instance.new("UIStroke")
-ls.Color     = Color3.fromRGB(255, 0, 0)
+ls.Color     = Color3.fromRGB(180, 80, 255)
 ls.Thickness = 1.2
 ls.Parent    = lbl
 
@@ -117,4 +141,4 @@ TweenService:Create(lbl,
 
 task.delay(3.2, function() sg:Destroy() end)
 
-print("DEMONTIME | Iluminacion exacta cargada")
+print("DEMONTIME | Galaxy iluminacion cargada")
