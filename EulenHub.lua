@@ -568,21 +568,24 @@ local galaxyEnabled = false
 local galaxySky     = nil
 
 local function startGalaxy()
-    if galaxySky then galaxySky:Destroy(); galaxySky = nil end
+    -- Eliminar sky existente en Lighting para evitar conflictos
+    for _, child in pairs(Lighting:GetChildren()) do
+        if child:IsA("Sky") then child:Destroy() end
+    end
     galaxySky = Instance.new("Sky")
-    galaxySky.Parent              = Lighting
-    galaxySky.SkyboxBk            = "rbxassetid://14940021683"
-    galaxySky.SkyboxDn            = "rbxassetid://14940021683"
-    galaxySky.SkyboxFt            = "rbxassetid://14940021683"
-    galaxySky.SkyboxLf            = "rbxassetid://14940021683"
-    galaxySky.SkyboxRt            = "rbxassetid://14940021683"
-    galaxySky.SkyboxUp            = "rbxassetid://14940021683"
-    galaxySky.SunTextureId        = "rbxasset://sky/sun.jpg"
-    galaxySky.SunAngularSize      = 11
-    galaxySky.MoonTextureId       = "rbxassetid://14940021683"
-    galaxySky.MoonAngularSize     = 12
-    galaxySky.StarCount           = 3000
+    galaxySky.SkyboxBk             = "rbxassetid://14940021683"
+    galaxySky.SkyboxDn             = "rbxassetid://14940021683"
+    galaxySky.SkyboxFt             = "rbxassetid://14940021683"
+    galaxySky.SkyboxLf             = "rbxassetid://14940021683"
+    galaxySky.SkyboxRt             = "rbxassetid://14940021683"
+    galaxySky.SkyboxUp             = "rbxassetid://14940021683"
+    galaxySky.SunTextureId         = "rbxasset://sky/sun.jpg"
+    galaxySky.SunAngularSize       = 11
+    galaxySky.MoonTextureId        = "rbxassetid://14940021683"
+    galaxySky.MoonAngularSize      = 12
+    galaxySky.StarCount            = 3000
     galaxySky.CelestialBodiesShown = true
+    galaxySky.Parent               = Lighting  -- Parent al final
 end
 
 local function stopGalaxy()
