@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════╗
--- ║   DEMONTIME - ILUMINACION LIMPIA     ║
+-- ║   DEMONTIME - ILUMINACION EXACTA     ║
 -- ╚══════════════════════════════════════╝
 
 local Lighting     = game:GetService("Lighting")
@@ -18,29 +18,68 @@ for _, v in ipairs(Lighting:GetChildren()) do
     end
 end
 
-Lighting.Ambient              = Color3.fromRGB(130, 120, 160)
-Lighting.OutdoorAmbient       = Color3.fromRGB(140, 125, 170)
-Lighting.Brightness           = 1.3                            -- brillo reducido
-Lighting.ClockTime            = 14.0
+-- ══════════════════════════════════════
+--  ILUMINACION BASE
+-- ══════════════════════════════════════
+
+Lighting.Ambient              = Color3.fromRGB(20, 30, 70)    -- azul oscuro como la foto
+Lighting.OutdoorAmbient       = Color3.fromRGB(25, 35, 80)    -- exterior azul marino
+Lighting.Brightness           = 1.0                            -- brillo moderado oscuro
+Lighting.ClockTime            = 20.0                           -- noche temprana
 Lighting.GeographicLatitude   = 41.7
-Lighting.GlobalShadows        = false
-Lighting.ShadowSoftness       = 0.0
-Lighting.FogEnd               = 9999
-Lighting.FogStart             = 9998
-Lighting.FogColor             = Color3.fromRGB(180, 160, 220)
-Lighting.ExposureCompensation = -0.2                           -- un poco menos expuesto
+Lighting.GlobalShadows        = true
+Lighting.ShadowSoftness       = 0.5
+Lighting.FogEnd               = 800
+Lighting.FogStart             = 400
+Lighting.FogColor             = Color3.fromRGB(10, 15, 50)    -- niebla azul oscura
+Lighting.ExposureCompensation = -0.1
+
+-- ══════════════════════════════════════
+--  COLOR CORRECTION
+-- ══════════════════════════════════════
 
 local CC = Instance.new("ColorCorrectionEffect")
 CC.Brightness   =  0.0
-CC.Contrast     =  0.20
-CC.Saturation   =  1.40
-CC.TintColor    = Color3.fromRGB(210, 185, 255)  -- violeta suave como la foto
+CC.Contrast     =  0.30               -- contraste que hace los colores nítidos
+CC.Saturation   =  1.30               -- colores vividos sin exagerar
+CC.TintColor    = Color3.fromRGB(160, 180, 255)  -- tinte azul marino de la foto
 CC.Parent       = Lighting
 
+-- ══════════════════════════════════════
+--  BLOOM MUY SUAVE
+-- ══════════════════════════════════════
+
+local Bloom = Instance.new("BloomEffect")
+Bloom.Intensity = 0.25
+Bloom.Size      = 12
+Bloom.Threshold = 0.92
+Bloom.Parent    = Lighting
+
+-- ══════════════════════════════════════
+--  ATMOSFERA OSCURA AZULADA
+-- ══════════════════════════════════════
+
+local Atmo = Instance.new("Atmosphere")
+Atmo.Density = 0.30
+Atmo.Offset  = 0.10
+Atmo.Color   = Color3.fromRGB(20, 40, 120)    -- azul marino profundo
+Atmo.Decay   = Color3.fromRGB(8, 15, 50)
+Atmo.Glare   = 0.0
+Atmo.Haze    = 0.8
+Atmo.Parent  = Lighting
+
+-- ══════════════════════════════════════
+--  CIELO AZUL OSCURO CON ESTRELLAS
+-- ══════════════════════════════════════
+
 local Sky = Instance.new("Sky")
-Sky.StarCount            = 0
+Sky.StarCount            = 4000
 Sky.CelestialBodiesShown = true
 Sky.Parent               = Lighting
+
+-- ══════════════════════════════════════
+--  MENSAJE
+-- ══════════════════════════════════════
 
 local lp  = Players.LocalPlayer
 local sg  = Instance.new("ScreenGui")
@@ -75,4 +114,4 @@ TweenService:Create(lbl,
 
 task.delay(3.2, function() sg:Destroy() end)
 
-print("DEMONTIME | Iluminacion violeta cargada")
+print("DEMONTIME | Iluminacion oscura colorida cargada")
