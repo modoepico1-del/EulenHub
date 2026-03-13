@@ -1,7 +1,18 @@
+-- ╔══════════════════════════════════════╗
+-- ║           DEMONTIME HUB              ║
+-- ╚══════════════════════════════════════╝
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+
+local HubConfig = {
+    Name    = "DEMONTIME",
+    NeonRed = Color3.fromRGB(255, 0, 0),
+    BgDark  = Color3.fromRGB(0, 0, 0),
+    TitleBg = Color3.fromRGB(0, 0, 0),
+}
 
 if CoreGui:FindFirstChild("DEMONTIME_GUI") then
     CoreGui:FindFirstChild("DEMONTIME_GUI"):Destroy()
@@ -13,7 +24,12 @@ ScreenGui.ResetOnSpawn   = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent         = CoreGui
 
+-- ══════════════════════════════════════
+--  BOTON TOGGLE (arriba izquierda)
+-- ══════════════════════════════════════
+
 local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Name             = "ToggleBtn"
 ToggleBtn.Text             = "DEMONTIME"
 ToggleBtn.Size             = UDim2.new(0, 110, 0, 28)
 ToggleBtn.Position         = UDim2.new(0, 10, 0, 10)
@@ -30,12 +46,17 @@ ToggleCorner.CornerRadius = UDim.new(0, 6)
 ToggleCorner.Parent = ToggleBtn
 
 local ToggleStroke = Instance.new("UIStroke")
-ToggleStroke.Color        = Color3.fromRGB(255, 0, 0)
-ToggleStroke.Thickness    = 1.5
+ToggleStroke.Color       = Color3.fromRGB(255, 0, 0)
+ToggleStroke.Thickness   = 1.5
 ToggleStroke.Transparency = 0.0
-ToggleStroke.Parent       = ToggleBtn
+ToggleStroke.Parent      = ToggleBtn
+
+-- ══════════════════════════════════════
+--  VENTANA PRINCIPAL (arriba izquierda)
+-- ══════════════════════════════════════
 
 local MainFrame = Instance.new("Frame")
+MainFrame.Name             = "MainFrame"
 MainFrame.Size             = UDim2.new(0, 480, 0, 320)
 MainFrame.Position         = UDim2.new(0, 10, 0, 48)
 MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -48,10 +69,11 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
+-- Borde neon rojo 3 capas
 local function addNeonBorder(parent, thickness, color)
     local glow = Instance.new("Frame")
-    glow.Size               = UDim2.new(1, thickness*6, 1, thickness*6)
-    glow.Position           = UDim2.new(0, -thickness*3, 0, -thickness*3)
+    glow.Size               = UDim2.new(1, thickness * 6, 1, thickness * 6)
+    glow.Position           = UDim2.new(0, -thickness * 3, 0, -thickness * 3)
     glow.BackgroundColor3   = color
     glow.BackgroundTransparency = 0.72
     glow.BorderSizePixel    = 0
@@ -60,9 +82,10 @@ local function addNeonBorder(parent, thickness, color)
     local gc = Instance.new("UICorner")
     gc.CornerRadius = UDim.new(0, 14)
     gc.Parent = glow
+
     local mid = Instance.new("Frame")
-    mid.Size               = UDim2.new(1, thickness*3, 1, thickness*3)
-    mid.Position           = UDim2.new(0, -thickness*1.5, 0, -thickness*1.5)
+    mid.Size               = UDim2.new(1, thickness * 3, 1, thickness * 3)
+    mid.Position           = UDim2.new(0, -thickness * 1.5, 0, -thickness * 1.5)
     mid.BackgroundColor3   = color
     mid.BackgroundTransparency = 0.50
     mid.BorderSizePixel    = 0
@@ -71,6 +94,7 @@ local function addNeonBorder(parent, thickness, color)
     local mc = Instance.new("UICorner")
     mc.CornerRadius = UDim.new(0, 12)
     mc.Parent = mid
+
     local stroke = Instance.new("UIStroke")
     stroke.Color           = color
     stroke.Thickness       = thickness
@@ -79,9 +103,14 @@ local function addNeonBorder(parent, thickness, color)
     stroke.Parent          = parent
 end
 
-addNeonBorder(MainFrame, 2, Color3.fromRGB(255, 0, 0))
+addNeonBorder(MainFrame, 2, HubConfig.NeonRed)
+
+-- ══════════════════════════════════════
+--  BARRA DE TITULO
+-- ══════════════════════════════════════
 
 local TitleBar = Instance.new("Frame")
+TitleBar.Name              = "TitleBar"
 TitleBar.Size              = UDim2.new(1, 0, 0, 42)
 TitleBar.Position          = UDim2.new(0, 0, 0, 0)
 TitleBar.BackgroundColor3  = Color3.fromRGB(0, 0, 0)
@@ -96,7 +125,7 @@ TitleCorner.Parent = TitleBar
 local TitleLine = Instance.new("Frame")
 TitleLine.Size             = UDim2.new(1, 0, 0, 2)
 TitleLine.Position         = UDim2.new(0, 0, 1, -2)
-TitleLine.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+TitleLine.BackgroundColor3 = HubConfig.NeonRed
 TitleLine.BorderSizePixel  = 0
 TitleLine.ZIndex           = 4
 TitleLine.Parent           = TitleBar
@@ -104,12 +133,13 @@ TitleLine.Parent           = TitleBar
 local lineGlow = Instance.new("Frame")
 lineGlow.Size              = UDim2.new(1, 0, 0, 8)
 lineGlow.Position          = UDim2.new(0, 0, 1, -5)
-lineGlow.BackgroundColor3  = Color3.fromRGB(255, 0, 0)
+lineGlow.BackgroundColor3  = HubConfig.NeonRed
 lineGlow.BackgroundTransparency = 0.6
 lineGlow.BorderSizePixel   = 0
 lineGlow.ZIndex            = 3
 lineGlow.Parent            = TitleBar
 
+-- Texto DEMONTIME letras rojas neon negro
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Text            = "DEMONTIME"
 TitleLabel.Size            = UDim2.new(1, -50, 1, 0)
@@ -128,6 +158,10 @@ TitleStroke.Thickness   = 2.5
 TitleStroke.Transparency = 0.0
 TitleStroke.Parent      = TitleLabel
 
+-- ══════════════════════════════════════
+--  BOTON X
+-- ══════════════════════════════════════
+
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Text              = "X"
 CloseBtn.Size              = UDim2.new(0, 28, 0, 28)
@@ -145,32 +179,45 @@ CloseBtnCorner.CornerRadius = UDim.new(0, 6)
 CloseBtnCorner.Parent = CloseBtn
 
 local CloseBtnStroke = Instance.new("UIStroke")
-CloseBtnStroke.Color        = Color3.fromRGB(255, 0, 0)
-CloseBtnStroke.Thickness    = 1.2
+CloseBtnStroke.Color       = Color3.fromRGB(255, 0, 0)
+CloseBtnStroke.Thickness   = 1.2
 CloseBtnStroke.Transparency = 0.1
-CloseBtnStroke.Parent       = CloseBtn
+CloseBtnStroke.Parent      = CloseBtn
 
 CloseBtn.MouseEnter:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(180,0,0), TextColor3 = Color3.fromRGB(255,255,255)}):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
+        BackgroundColor3 = Color3.fromRGB(180, 0, 0),
+        TextColor3       = Color3.fromRGB(255, 255, 255)
+    }):Play()
 end)
 CloseBtn.MouseLeave:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0,0,0), TextColor3 = Color3.fromRGB(255,0,0)}):Play()
+    TweenService:Create(CloseBtn, TweenInfo.new(0.15), {
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        TextColor3       = Color3.fromRGB(255, 0, 0)
+    }):Play()
 end)
+
 CloseBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0,480,0,0)}):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 480, 0, 0)
+    }):Play()
     task.delay(0.27, function()
         MainFrame.Visible = false
-        MainFrame.Size    = UDim2.new(0,480,0,320)
+        MainFrame.Size    = UDim2.new(0, 480, 0, 320)
     end)
 end)
 
+-- ══════════════════════════════════════
+--  AREA DE CONTENIDO (negro puro)
+-- ══════════════════════════════════════
+
 local ContentArea = Instance.new("Frame")
-ContentArea.Size             = UDim2.new(1, 0, 1, -42)
-ContentArea.Position         = UDim2.new(0, 0, 0, 42)
-ContentArea.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ContentArea.BorderSizePixel  = 0
-ContentArea.ZIndex           = 3
-ContentArea.Parent           = MainFrame
+ContentArea.Size               = UDim2.new(1, 0, 1, -42)
+ContentArea.Position           = UDim2.new(0, 0, 0, 42)
+ContentArea.BackgroundColor3   = Color3.fromRGB(0, 0, 0)
+ContentArea.BorderSizePixel    = 0
+ContentArea.ZIndex             = 3
+ContentArea.Parent             = MainFrame
 
 local Placeholder = Instance.new("TextLabel")
 Placeholder.Text               = "sin opciones configuradas"
@@ -183,66 +230,98 @@ Placeholder.TextXAlignment     = Enum.TextXAlignment.Center
 Placeholder.ZIndex             = 4
 Placeholder.Parent             = ContentArea
 
+-- ══════════════════════════════════════
+--  TOGGLE ABRIR / CERRAR
+-- ══════════════════════════════════════
+
 ToggleBtn.MouseButton1Click:Connect(function()
     if MainFrame.Visible then
-        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0,480,0,0)}):Play()
+        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 480, 0, 0)
+        }):Play()
         task.delay(0.27, function()
             MainFrame.Visible = false
-            MainFrame.Size    = UDim2.new(0,480,0,320)
+            MainFrame.Size    = UDim2.new(0, 480, 0, 320)
         end)
     else
-        MainFrame.Size    = UDim2.new(0,480,0,0)
+        MainFrame.Size    = UDim2.new(0, 480, 0, 0)
         MainFrame.Visible = true
-        TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0,480,0,320)}):Play()
+        TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 480, 0, 320)
+        }):Play()
     end
 end)
 
+-- ══════════════════════════════════════
+--  ANIMACIONES NEON PULSANTES
+-- ══════════════════════════════════════
+
 task.spawn(function()
     while ScreenGui.Parent do
-        TweenService:Create(TitleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6}):Play()
+        TweenService:Create(TitleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.6 }):Play()
         task.wait(1.2)
-        TweenService:Create(TitleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.0}):Play()
+        TweenService:Create(TitleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.0 }):Play()
         task.wait(1.2)
     end
 end)
 
 task.spawn(function()
     while ScreenGui.Parent do
-        TweenService:Create(TitleLine, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.55}):Play()
+        TweenService:Create(TitleLine, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.55 }):Play()
         task.wait(1.0)
-        TweenService:Create(TitleLine, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = 0.0}):Play()
+        TweenService:Create(TitleLine, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { BackgroundTransparency = 0.0 }):Play()
         task.wait(1.0)
     end
 end)
 
 task.spawn(function()
     while ScreenGui.Parent do
-        TweenService:Create(ToggleStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6}):Play()
+        TweenService:Create(ToggleStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.6 }):Play()
         task.wait(1.0)
-        TweenService:Create(ToggleStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.0}):Play()
+        TweenService:Create(ToggleStroke, TweenInfo.new(1.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Transparency = 0.0 }):Play()
         task.wait(1.0)
     end
 end)
+
+-- ══════════════════════════════════════
+--  ANIMACION DE APERTURA INICIAL
+-- ══════════════════════════════════════
 
 MainFrame.Size = UDim2.new(0, 480, 0, 0)
-TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0,480,0,320)}):Play()
+TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 480, 0, 320)
+}):Play()
+
+-- ══════════════════════════════════════
+--  ARRASTRE DE VENTANA
+-- ══════════════════════════════════════
 
 local dragging, dragStart, startPos = false, nil, nil
+
 TitleBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
+        dragging  = true
         dragStart = input.Position
         startPos  = MainFrame.Position
     end
 end)
+
 TitleBar.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = false
     end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
         local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
     end
 end)
+
+-- ══════════════════════════════════════
+--  FIN - DEMONTIME HUB
+-- ══════════════════════════════════════
