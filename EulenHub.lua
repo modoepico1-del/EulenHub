@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════╗
--- ║   DEMONTIME - ILUMINACION EXACTA     ║
+-- ║   DEMONTIME - NOCHE CLARA EXACTA     ║
 -- ╚══════════════════════════════════════╝
 
 local Lighting     = game:GetService("Lighting")
@@ -18,44 +18,53 @@ for _, v in ipairs(Lighting:GetChildren()) do
     end
 end
 
-Lighting.Ambient              = Color3.fromRGB(10, 18, 50)    -- azul muy oscuro
-Lighting.OutdoorAmbient       = Color3.fromRGB(12, 20, 55)
-Lighting.Brightness           = 0.5                            -- brillo muy bajo
-Lighting.ClockTime            = 21.0                           -- mas noche = mas oscuro
+-- ══════════════════════════════════════
+--  ILUMINACION: NOCHE PERO SE VE TODO
+-- ══════════════════════════════════════
+
+Lighting.Ambient              = Color3.fromRGB(80, 100, 160)   -- azul claro fuerte
+Lighting.OutdoorAmbient       = Color3.fromRGB(90, 110, 170)   -- exterior igual
+Lighting.Brightness           = 0.0                             -- SIN brillo de sol
+Lighting.ClockTime            = 0.0                             -- medianoche
 Lighting.GeographicLatitude   = 41.7
-Lighting.GlobalShadows        = true
-Lighting.ShadowSoftness       = 0.5
-Lighting.FogEnd               = 800
-Lighting.FogStart             = 400
-Lighting.FogColor             = Color3.fromRGB(8, 12, 40)
-Lighting.ExposureCompensation = -0.5                           -- bajado bastante
+Lighting.GlobalShadows        = false                           -- sin sombras
+Lighting.ShadowSoftness       = 0.0
+Lighting.FogEnd               = 9999                            -- sin niebla
+Lighting.FogStart             = 9998
+Lighting.FogColor              = Color3.fromRGB(10, 15, 50)
+Lighting.ExposureCompensation = 0.0
+
+-- ══════════════════════════════════════
+--  COLOR CORRECTION
+-- ══════════════════════════════════════
 
 local CC = Instance.new("ColorCorrectionEffect")
-CC.Brightness   = -0.05                -- ligeramente mas oscuro
-CC.Contrast     =  0.30
-CC.Saturation   =  1.30
-CC.TintColor    = Color3.fromRGB(160, 180, 255)
+CC.Brightness   =  0.0
+CC.Contrast     =  0.25
+CC.Saturation   =  1.20
+CC.TintColor    = Color3.fromRGB(175, 190, 255)   -- tinte azul marino suave
 CC.Parent       = Lighting
 
-local Bloom = Instance.new("BloomEffect")
-Bloom.Intensity = 0.20
-Bloom.Size      = 10
-Bloom.Threshold = 0.95
-Bloom.Parent    = Lighting
+-- ══════════════════════════════════════
+--  SIN BLOOM -- apagado total
+-- ══════════════════════════════════════
 
-local Atmo = Instance.new("Atmosphere")
-Atmo.Density = 0.30
-Atmo.Offset  = 0.10
-Atmo.Color   = Color3.fromRGB(20, 40, 120)
-Atmo.Decay   = Color3.fromRGB(8, 15, 50)
-Atmo.Glare   = 0.0
-Atmo.Haze    = 0.8
-Atmo.Parent  = Lighting
+-- No se agrega BloomEffect
+-- No se agrega SunRaysEffect
+-- No se agrega Atmosphere
+
+-- ══════════════════════════════════════
+--  CIELO NOCHE CON ESTRELLAS
+-- ══════════════════════════════════════
 
 local Sky = Instance.new("Sky")
-Sky.StarCount            = 4000
+Sky.StarCount            = 5000
 Sky.CelestialBodiesShown = true
 Sky.Parent               = Lighting
+
+-- ══════════════════════════════════════
+--  MENSAJE
+-- ══════════════════════════════════════
 
 local lp  = Players.LocalPlayer
 local sg  = Instance.new("ScreenGui")
@@ -63,9 +72,9 @@ sg.ResetOnSpawn = false
 sg.Parent       = lp.PlayerGui
 
 local lbl = Instance.new("TextLabel")
-lbl.Text             = "DEMONTIME | Iluminacion lista"
-lbl.Size             = UDim2.new(0, 270, 0, 32)
-lbl.Position         = UDim2.new(0.5, -135, 0, 14)
+lbl.Text             = "DEMONTIME | Noche clara activada"
+lbl.Size             = UDim2.new(0, 290, 0, 32)
+lbl.Position         = UDim2.new(0.5, -145, 0, 14)
 lbl.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 lbl.TextColor3       = Color3.fromRGB(255, 0, 0)
 lbl.TextSize         = 13
@@ -90,4 +99,4 @@ TweenService:Create(lbl,
 
 task.delay(3.2, function() sg:Destroy() end)
 
-print("DEMONTIME | Brillo bajado")
+print("DEMONTIME | Noche clara cargada")
