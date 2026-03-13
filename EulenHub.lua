@@ -565,12 +565,38 @@ end)
 
 -- ROW 5: GALAXY
 local galaxyEnabled = false
+local galaxySky     = nil
+
+local function startGalaxy()
+    if galaxySky then galaxySky:Destroy(); galaxySky = nil end
+    galaxySky = Instance.new("Sky")
+    galaxySky.Parent              = Lighting
+    galaxySky.SkyboxBk            = "rbxassetid://14940021683"
+    galaxySky.SkyboxDn            = "rbxassetid://14940021683"
+    galaxySky.SkyboxFt            = "rbxassetid://14940021683"
+    galaxySky.SkyboxLf            = "rbxassetid://14940021683"
+    galaxySky.SkyboxRt            = "rbxassetid://14940021683"
+    galaxySky.SkyboxUp            = "rbxassetid://14940021683"
+    galaxySky.SunTextureId        = "rbxasset://sky/sun.jpg"
+    galaxySky.SunAngularSize      = 11
+    galaxySky.MoonTextureId       = "rbxassetid://14940021683"
+    galaxySky.MoonAngularSize     = 12
+    galaxySky.StarCount           = 3000
+    galaxySky.CelestialBodiesShown = true
+end
+
+local function stopGalaxy()
+    if galaxySky then galaxySky:Destroy(); galaxySky = nil end
+end
+
 local TG,KG,SG,RSG = makeToggleRow("GALAXY", 234)
 TG.MouseButton1Click:Connect(function()
     galaxyEnabled = not galaxyEnabled
     if galaxyEnabled then
+        startGalaxy()
         TweenService:Create(KG,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
     else
+        stopGalaxy()
         TweenService:Create(KG,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
     end
 end)
