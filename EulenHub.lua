@@ -7,10 +7,11 @@ local RunService        = game:GetService("RunService")
 local HttpService       = game:GetService("HttpService")
 local Lighting          = game:GetService("Lighting")
 
-local player    = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local HRP       = character:WaitForChild("HumanoidRootPart", 5)
-local Camera    = workspace.CurrentCamera
+local player      = Players.LocalPlayer
+local LocalPlayer = player
+local character   = player.Character or player.CharacterAdded:Wait()
+local HRP         = character:WaitForChild("HumanoidRootPart", 5)
+local Camera      = workspace.CurrentCamera
 
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
@@ -261,16 +262,12 @@ end
 local function startDarkMode()
     saveLightingState()
     darkModeObjects = {}
-
-    -- Eliminar skies existentes
     for _, child in pairs(Lighting:GetChildren()) do
         if child:IsA("Sky") then
             table.insert(darkModeObjects, {removed = true, instance = child, parent = Lighting})
             child.Parent = nil
         end
     end
-
-    -- Solo sky negro, sin tocar nada mas del Lighting
     local sky = Instance.new("Sky")
     sky.Name                 = "BlackSky"
     sky.SkyboxBk             = "rbxassetid://2013298"
@@ -283,8 +280,6 @@ local function startDarkMode()
     sky.CelestialBodiesShown = false
     sky.Parent               = Lighting
     table.insert(darkModeObjects, sky)
-
-    -- Quitar niebla para que el juego se vea mas brilloso
     Lighting.FogStart = 10000
 end
 
@@ -304,6 +299,75 @@ local function stopDarkMode()
     end)
 end
 
+-- ─── ESP ───────────────────────────────────────────────────────
+local espEnabled     = false
+local espObjects     = {}
+local espConnections = {}
+
+local function createESP(plr)
+    if plr == LocalPlayer then return end
+    if not plr.Character then return end
+    if plr.Character:FindFirstChild("NightESP") then return end
+    local c = plr.Character
+    local charHrp = c:FindFirstChild("HumanoidRootPart")
+    if not charHrp then return end
+    local humanoid = c:FindFirstChildOfClass("Humanoid")
+    if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+    local hitbox = Instance.new("BoxHandleAdornment")
+    hitbox.Name = "NightESP"
+    hitbox.Adornee = charHrp
+    hitbox.Size = Vector3.new(4, 6, 2)
+    hitbox.Color3 = Color3.fromRGB(128, 0, 128)
+    hitbox.Transparency = 0.5
+    hitbox.ZIndex = 10
+    hitbox.AlwaysOnTop = true
+    hitbox.Parent = c
+    espObjects[plr] = {box = hitbox, character = c}
+end
+
+local function removeESP(plr)
+    pcall(function()
+        if plr.Character then
+            local hitbox = plr.Character:FindFirstChild("NightESP")
+            if hitbox then hitbox:Destroy() end
+            local humanoid = plr.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Automatic end
+        end
+        if espObjects[plr] then espObjects[plr] = nil end
+    end)
+end
+
+local function enableESP()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            if plr.Character then pcall(function() createESP(plr) end) end
+            local conn = plr.CharacterAdded:Connect(function()
+                task.wait(0.1)
+                if espEnabled then pcall(function() createESP(plr) end) end
+            end)
+            table.insert(espConnections, conn)
+        end
+    end
+    local playerAddedConn = Players.PlayerAdded:Connect(function(plr)
+        if plr == LocalPlayer then return end
+        local charAddedConn = plr.CharacterAdded:Connect(function()
+            task.wait(0.1)
+            if espEnabled then pcall(function() createESP(plr) end) end
+        end)
+        table.insert(espConnections, charAddedConn)
+    end)
+    table.insert(espConnections, playerAddedConn)
+end
+
+local function disableESP()
+    for _, plr in ipairs(Players:GetPlayers()) do pcall(function() removeESP(plr) end) end
+    for _, conn in ipairs(espConnections) do
+        if conn and conn.Connected then conn:Disconnect() end
+    end
+    espConnections = {}
+    espObjects = {}
+end
+
 -- ─── SAVE / LOAD ───────────────────────────────────────────────
 local CONFIG_FILE = "KMoneyHub_config.json"
 
@@ -314,6 +378,7 @@ local function saveConfig()
             AntiRagdoll = antiRagdollEnabled,
             XRAY        = unwalkEnabled,
             DarkMode    = darkModeEnabled,
+            ESP         = espEnabled,
         }))
     end)
 end
@@ -324,7 +389,7 @@ pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 -- ─── PALETA ────────────────────────────────────────────────────
 local WHITE       = Color3.fromRGB(255, 255, 255)
 local BLACK       = Color3.fromRGB(0, 0, 0)
-local FULL_HEIGHT = 371
+local FULL_HEIGHT = 483
 
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
@@ -341,7 +406,7 @@ pcall(function() ScreenGui.Parent = CoreGui end)
 local Main = Instance.new("Frame", ScreenGui)
 Main.Name                   = "Main"
 Main.Size                   = UDim2.new(0, 270, 0, FULL_HEIGHT)
-Main.Position               = UDim2.new(0.5, -135, 0.5, -185)
+Main.Position               = UDim2.new(0.5, -135, 0.5, -241)
 Main.BackgroundTransparency = 1
 Main.BorderSizePixel        = 0
 Main.ClipsDescendants       = true
@@ -498,17 +563,43 @@ T4.MouseButton1Click:Connect(function()
     end
 end)
 
+-- ROW 5: GALAXY (sin funciones por ahora)
+local galaxyEnabled = false
+local TG,KG,SG,RSG = makeToggleRow("GALAXY", 234)
+TG.MouseButton1Click:Connect(function()
+    galaxyEnabled = not galaxyEnabled
+    if galaxyEnabled then
+        TweenService:Create(KG,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
+    else
+        TweenService:Create(KG,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
+    end
+end)
+
+-- ROW 6: ESP
+local T5,K5,S5,RS5 = makeToggleRow("ESP", 290)
+if savedCfg.ESP then espEnabled=true; enableESP(); applyOn(T5,K5,S5,RS5) end
+T5.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        enableESP()
+        TweenService:Create(K5,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
+    else
+        disableESP()
+        TweenService:Create(K5,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
+    end
+end)
+
 -- ─── SEPARATOR ─────────────────────────────────────────────────
 local Sep = Instance.new("Frame", Content)
 Sep.Size             = UDim2.new(1, -24, 0, 1)
-Sep.Position         = UDim2.new(0, 12, 0, 244)
+Sep.Position         = UDim2.new(0, 12, 0, 356)
 Sep.BackgroundColor3 = WHITE
 Sep.BorderSizePixel  = 0
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
 SaveFrame.Size               = UDim2.new(1, -24, 0, 40)
-SaveFrame.Position           = UDim2.new(0, 12, 0, 256)
+SaveFrame.Position           = UDim2.new(0, 12, 0, 368)
 SaveFrame.BackgroundTransparency = 1
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
