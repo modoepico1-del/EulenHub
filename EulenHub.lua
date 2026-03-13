@@ -24,10 +24,6 @@ ScreenGui.ResetOnSpawn   = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent         = CoreGui
 
--- ══════════════════════════════════════
---  BOTON TOGGLE
--- ══════════════════════════════════════
-
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Text             = "DEMONTIME"
 ToggleBtn.Size             = UDim2.new(0, 110, 0, 28)
@@ -49,10 +45,6 @@ ToggleStroke.Color        = Color3.fromRGB(255, 0, 0)
 ToggleStroke.Thickness    = 1.5
 ToggleStroke.Transparency = 0.0
 ToggleStroke.Parent       = ToggleBtn
-
--- ══════════════════════════════════════
---  VENTANA PRINCIPAL
--- ══════════════════════════════════════
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size             = UDim2.new(0, 480, 0, 320)
@@ -102,10 +94,6 @@ end
 
 addNeonBorder(MainFrame, 2, HubConfig.NeonRed)
 
--- ══════════════════════════════════════
---  BARRA DE TITULO
--- ══════════════════════════════════════
-
 local TitleBar = Instance.new("Frame")
 TitleBar.Size              = UDim2.new(1, 0, 0, 42)
 TitleBar.Position          = UDim2.new(0, 0, 0, 0)
@@ -153,10 +141,6 @@ TitleStroke.Thickness   = 2.5
 TitleStroke.Transparency = 0.0
 TitleStroke.Parent      = TitleLabel
 
--- ══════════════════════════════════════
---  BOTON X
--- ══════════════════════════════════════
-
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Text              = "X"
 CloseBtn.Size              = UDim2.new(0, 28, 0, 28)
@@ -202,10 +186,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ══════════════════════════════════════
---  AREA DE CONTENIDO
--- ══════════════════════════════════════
-
 local ContentArea = Instance.new("Frame")
 ContentArea.Size             = UDim2.new(1, 0, 1, -42)
 ContentArea.Position         = UDim2.new(0, 0, 0, 42)
@@ -225,53 +205,6 @@ Placeholder.TextXAlignment     = Enum.TextXAlignment.Center
 Placeholder.ZIndex             = 4
 Placeholder.Parent             = ContentArea
 
--- ══════════════════════════════════════
---  BOTON REJOIN
--- ══════════════════════════════════════
-
-local RejoinBtn = Instance.new("TextButton")
-RejoinBtn.Text             = "RESTAURAR ILUMINACION (Rejoin)"
-RejoinBtn.Size             = UDim2.new(0, 280, 0, 36)
-RejoinBtn.Position         = UDim2.new(0.5, -140, 0.5, -18)
-RejoinBtn.BackgroundColor3 = Color3.fromRGB(10, 0, 0)
-RejoinBtn.TextColor3       = Color3.fromRGB(255, 0, 0)
-RejoinBtn.TextSize         = 12
-RejoinBtn.Font             = Enum.Font.GothamBlack
-RejoinBtn.BorderSizePixel  = 0
-RejoinBtn.ZIndex           = 5
-RejoinBtn.Parent           = ContentArea
-
-local RejoinCorner = Instance.new("UICorner")
-RejoinCorner.CornerRadius = UDim.new(0, 6)
-RejoinCorner.Parent = RejoinBtn
-
-local RejoinStroke = Instance.new("UIStroke")
-RejoinStroke.Color       = Color3.fromRGB(255, 0, 0)
-RejoinStroke.Thickness   = 1.2
-RejoinStroke.Parent      = RejoinBtn
-
-RejoinBtn.MouseEnter:Connect(function()
-    TweenService:Create(RejoinBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Color3.fromRGB(160, 0, 0)
-    }):Play()
-end)
-RejoinBtn.MouseLeave:Connect(function()
-    TweenService:Create(RejoinBtn, TweenInfo.new(0.15), {
-        BackgroundColor3 = Color3.fromRGB(10, 0, 0)
-    }):Play()
-end)
-
-RejoinBtn.MouseButton1Click:Connect(function()
-    game:GetService("TeleportService"):Teleport(
-        game.PlaceId,
-        game:GetService("Players").LocalPlayer
-    )
-end)
-
--- ══════════════════════════════════════
---  TOGGLE ABRIR / CERRAR
--- ══════════════════════════════════════
-
 ToggleBtn.MouseButton1Click:Connect(function()
     if MainFrame.Visible then
         TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -289,10 +222,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
         }):Play()
     end
 end)
-
--- ══════════════════════════════════════
---  ANIMACIONES NEON PULSANTES
--- ══════════════════════════════════════
 
 task.spawn(function()
     while ScreenGui.Parent do
@@ -321,18 +250,10 @@ task.spawn(function()
     end
 end)
 
--- ══════════════════════════════════════
---  ANIMACION APERTURA
--- ══════════════════════════════════════
-
 MainFrame.Size = UDim2.new(0, 480, 0, 0)
 TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 480, 0, 320)
 }):Play()
-
--- ══════════════════════════════════════
---  ARRASTRE
--- ══════════════════════════════════════
 
 local dragging, dragStart, startPos = false, nil, nil
 
@@ -359,5 +280,3 @@ UserInputService.InputChanged:Connect(function(input)
         )
     end
 end)
-
--- FIN - DEMONTIME HUB
