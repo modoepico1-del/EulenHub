@@ -577,14 +577,57 @@ T5.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 6: GALAXY (sin funciones por ahora)
-local galaxyEnabled = false
+-- ROW 6: GALAXY
+local galaxyEnabled    = false
+local galaxySky        = nil
+local originalSkies    = {}
+
+local function startGalaxy()
+    -- Guardar y ocultar skies existentes
+    originalSkies = {}
+    for _, child in pairs(Lighting:GetChildren()) do
+        if child:IsA("Sky") then
+            table.insert(originalSkies, {instance = child, parent = Lighting})
+            child.Parent = nil
+        end
+    end
+    -- Crear sky galaxia
+    galaxySky = Instance.new("Sky")
+    galaxySky.SkyboxBk             = "rbxassetid://14939997943"
+    galaxySky.SkyboxDn             = "rbxassetid://14939714090"
+    galaxySky.SkyboxFt             = "rbxassetid://14939997943"
+    galaxySky.SkyboxLf             = "rbxassetid://14939997943"
+    galaxySky.SkyboxRt             = "rbxassetid://14939997943"
+    galaxySky.SkyboxUp             = "rbxassetid://14940000257"
+    galaxySky.SkyboxOrientation    = Vector3.new(0, 0, 0)
+    galaxySky.SunTextureId         = "rbxasset://sky/sun.jpg"
+    galaxySky.SunAngularSize       = 11
+    galaxySky.MoonTextureId        = "rbxassetid://14940062085"
+    galaxySky.MoonAngularSize      = 12
+    galaxySky.StarCount            = 3000
+    galaxySky.CelestialBodiesShown = true
+    galaxySky.Parent               = Lighting
+end
+
+local function stopGalaxy()
+    if galaxySky then
+        galaxySky:Destroy()
+        galaxySky = nil
+    end
+    for _, obj in ipairs(originalSkies) do
+        pcall(function() obj.instance.Parent = obj.parent end)
+    end
+    originalSkies = {}
+end
+
 local TG,KG,SG,RSG = makeToggleRow("GALAXY", 290)
 TG.MouseButton1Click:Connect(function()
     galaxyEnabled = not galaxyEnabled
     if galaxyEnabled then
+        startGalaxy()
         TweenService:Create(KG,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
     else
+        stopGalaxy()
         TweenService:Create(KG,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
     end
 end)
