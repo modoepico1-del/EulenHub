@@ -588,13 +588,9 @@ local function startGalaxy()
     galaxySky.SunAngularSize       = 11
     galaxySky.MoonTextureId        = "rbxassetid://14940021683"
     galaxySky.MoonAngularSize      = 12
-    galaxySky.StarCount            = 10000
+    galaxySky.StarCount            = 3000
     galaxySky.CelestialBodiesShown = true
     galaxySky.Parent               = Lighting
-    Lighting.Ambient        = Color3.fromRGB(0, 10, 40)
-    Lighting.OutdoorAmbient = Color3.fromRGB(0, 15, 55)
-    Lighting.Brightness     = 0.5
-    Lighting.ClockTime      = 0
 end
 
 local function stopGalaxy()
@@ -603,12 +599,6 @@ local function stopGalaxy()
         pcall(function() obj.instance.Parent = obj.parent end)
     end
     originalSkies = {}
-    pcall(function()
-        Lighting.Ambient        = originalLighting.Ambient        or Color3.fromRGB(127,127,127)
-        Lighting.OutdoorAmbient = originalLighting.OutdoorAmbient or Color3.fromRGB(127,127,127)
-        Lighting.Brightness     = originalLighting.Brightness     or 2
-        Lighting.ClockTime      = originalLighting.ClockTime      or 14
-    end)
 end
 
 local TG,KG,SG,RSG = makeToggleRow("GALAXY", 234)
