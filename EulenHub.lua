@@ -563,42 +563,25 @@ T4.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 5: GALAXY (debajo de Dark Mode)
-local galaxyEnabled    = false
-local galaxySky        = nil
-local originalSkies    = {}
+-- ROW 5: GALAXY
+local galaxyEnabled = false
+local galaxySky     = nil
 
 local function startGalaxy()
-    originalSkies = {}
-    for _, child in pairs(Lighting:GetChildren()) do
-        if child:IsA("Sky") then
-            table.insert(originalSkies, {instance = child, parent = Lighting})
-            child.Parent = nil
-        end
-    end
+    if galaxySky then galaxySky:Destroy(); galaxySky = nil end
     galaxySky = Instance.new("Sky")
-    galaxySky.SkyboxBk             = "rbxassetid://14940021683"
-    galaxySky.SkyboxDn             = "rbxassetid://14940021683"
-    galaxySky.SkyboxFt             = "rbxassetid://14940021683"
-    galaxySky.SkyboxLf             = "rbxassetid://14940021683"
-    galaxySky.SkyboxRt             = "rbxassetid://14940021683"
-    galaxySky.SkyboxUp             = "rbxassetid://14940021683"
-    galaxySky.SkyboxOrientation    = Vector3.new(0, 0, 0)
-    galaxySky.SunTextureId         = "rbxasset://sky/sun.jpg"
-    galaxySky.SunAngularSize       = 11
-    galaxySky.MoonTextureId        = "rbxassetid://14940021683"
-    galaxySky.MoonAngularSize      = 12
-    galaxySky.StarCount            = 3000
-    galaxySky.CelestialBodiesShown = true
-    galaxySky.Parent               = Lighting
+    galaxySky.SkyboxBk = "rbxassetid://14940021683"
+    galaxySky.SkyboxDn = "rbxassetid://14940021683"
+    galaxySky.SkyboxFt = "rbxassetid://14940021683"
+    galaxySky.SkyboxLf = "rbxassetid://14940021683"
+    galaxySky.SkyboxRt = "rbxassetid://14940021683"
+    galaxySky.SkyboxUp = "rbxassetid://14940021683"
+    galaxySky.StarCount = 3000
+    galaxySky.Parent   = Lighting
 end
 
 local function stopGalaxy()
     if galaxySky then galaxySky:Destroy(); galaxySky = nil end
-    for _, obj in ipairs(originalSkies) do
-        pcall(function() obj.instance.Parent = obj.parent end)
-    end
-    originalSkies = {}
 end
 
 local TG,KG,SG,RSG = makeToggleRow("GALAXY", 234)
