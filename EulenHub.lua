@@ -24,10 +24,6 @@ ScreenGui.ResetOnSpawn   = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent         = CoreGui
 
--- ══════════════════════════════════════
---  BOTON TOGGLE (arriba izquierda)
--- ══════════════════════════════════════
-
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Name             = "ToggleBtn"
 ToggleBtn.Text             = "DEMONTIME"
@@ -51,10 +47,6 @@ ToggleStroke.Thickness   = 1.5
 ToggleStroke.Transparency = 0.0
 ToggleStroke.Parent      = ToggleBtn
 
--- ══════════════════════════════════════
---  VENTANA PRINCIPAL (arriba izquierda)
--- ══════════════════════════════════════
-
 local MainFrame = Instance.new("Frame")
 MainFrame.Name             = "MainFrame"
 MainFrame.Size             = UDim2.new(0, 480, 0, 320)
@@ -69,7 +61,6 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
--- Borde neon rojo 3 capas
 local function addNeonBorder(parent, thickness, color)
     local glow = Instance.new("Frame")
     glow.Size               = UDim2.new(1, thickness * 6, 1, thickness * 6)
@@ -105,10 +96,6 @@ end
 
 addNeonBorder(MainFrame, 2, HubConfig.NeonRed)
 
--- ══════════════════════════════════════
---  BARRA DE TITULO
--- ══════════════════════════════════════
-
 local TitleBar = Instance.new("Frame")
 TitleBar.Name              = "TitleBar"
 TitleBar.Size              = UDim2.new(1, 0, 0, 42)
@@ -139,7 +126,6 @@ lineGlow.BorderSizePixel   = 0
 lineGlow.ZIndex            = 3
 lineGlow.Parent            = TitleBar
 
--- Texto DEMONTIME letras rojas neon negro
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Text            = "DEMONTIME"
 TitleLabel.Size            = UDim2.new(1, -50, 1, 0)
@@ -157,10 +143,6 @@ TitleStroke.Color       = Color3.fromRGB(0, 0, 0)
 TitleStroke.Thickness   = 2.5
 TitleStroke.Transparency = 0.0
 TitleStroke.Parent      = TitleLabel
-
--- ══════════════════════════════════════
---  BOTON X
--- ══════════════════════════════════════
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Text              = "X"
@@ -207,10 +189,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- ══════════════════════════════════════
---  AREA DE CONTENIDO (negro puro)
--- ══════════════════════════════════════
-
 local ContentArea = Instance.new("Frame")
 ContentArea.Size               = UDim2.new(1, 0, 1, -42)
 ContentArea.Position           = UDim2.new(0, 0, 0, 42)
@@ -230,10 +208,6 @@ Placeholder.TextXAlignment     = Enum.TextXAlignment.Center
 Placeholder.ZIndex             = 4
 Placeholder.Parent             = ContentArea
 
--- ══════════════════════════════════════
---  TOGGLE ABRIR / CERRAR
--- ══════════════════════════════════════
-
 ToggleBtn.MouseButton1Click:Connect(function()
     if MainFrame.Visible then
         TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -251,10 +225,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
         }):Play()
     end
 end)
-
--- ══════════════════════════════════════
---  ANIMACIONES NEON PULSANTES
--- ══════════════════════════════════════
 
 task.spawn(function()
     while ScreenGui.Parent do
@@ -283,18 +253,10 @@ task.spawn(function()
     end
 end)
 
--- ══════════════════════════════════════
---  ANIMACION DE APERTURA INICIAL
--- ══════════════════════════════════════
-
 MainFrame.Size = UDim2.new(0, 480, 0, 0)
 TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
     Size = UDim2.new(0, 480, 0, 320)
 }):Play()
-
--- ══════════════════════════════════════
---  ARRASTRE DE VENTANA
--- ══════════════════════════════════════
 
 local dragging, dragStart, startPos = false, nil, nil
 
@@ -321,7 +283,3 @@ UserInputService.InputChanged:Connect(function(input)
         )
     end
 end)
-
--- ══════════════════════════════════════
---  FIN - DEMONTIME HUB
--- ══════════════════════════════════════
