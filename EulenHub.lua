@@ -7,13 +7,12 @@ local RunService        = game:GetService("RunService")
 local HttpService       = game:GetService("HttpService")
 local Lighting          = game:GetService("Lighting")
 
-local player      = Players.LocalPlayer
-local LocalPlayer = player
-local character   = player.Character or player.CharacterAdded:Wait()
+local LocalPlayer = Players.LocalPlayer
+local character   = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local HRP         = character:WaitForChild("HumanoidRootPart", 5)
 local Camera      = workspace.CurrentCamera
 
-player.CharacterAdded:Connect(function(newChar)
+LocalPlayer.CharacterAdded:Connect(function(newChar)
     character = newChar
     HRP       = newChar:WaitForChild("HumanoidRootPart", 5)
 end)
@@ -90,7 +89,7 @@ local moveConnection          = nil
 local playerModule, controls  = nil, nil
 
 pcall(function()
-    playerModule = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+    playerModule = require(LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
     controls     = playerModule:GetControls()
 end)
 
@@ -159,7 +158,7 @@ local function setupAntiRagdoll(char)
     end)
 end
 
-player.CharacterAdded:Connect(function(newChar)
+LocalPlayer.CharacterAdded:Connect(function(newChar)
     if antiRagdollEnabled then task.wait(1); setupAntiRagdoll(newChar) end
 end)
 
@@ -189,7 +188,7 @@ local function startUnwalk()
         end
     end)
     local function cleanCharacter(char)
-        if char == player.Character then return end
+        if char == LocalPlayer.Character then return end
         pcall(function()
             for _, a in ipairs(char:GetChildren()) do
                 if a:IsA("Accessory") then a:Destroy() end
@@ -225,7 +224,7 @@ local function startUnwalk()
             end
         end)
     end)
-    unwalkCharConn = player.CharacterAdded:Connect(function()
+    unwalkCharConn = LocalPlayer.CharacterAdded:Connect(function()
         task.wait(0.5); if unwalkEnabled then startUnwalk() end
     end)
 end
@@ -246,16 +245,7 @@ local originalLighting = {}
 
 local function saveLightingState()
     originalLighting = {
-        ClockTime                = Lighting.ClockTime,
-        Ambient                  = Lighting.Ambient,
-        Brightness               = Lighting.Brightness,
-        EnvironmentDiffuseScale  = Lighting.EnvironmentDiffuseScale,
-        EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale,
-        GlobalShadows            = Lighting.GlobalShadows,
-        OutdoorAmbient           = Lighting.OutdoorAmbient,
-        FogColor                 = Lighting.FogColor,
-        FogEnd                   = Lighting.FogEnd,
-        FogStart                 = Lighting.FogStart,
+        FogStart = Lighting.FogStart,
     }
 end
 
@@ -294,9 +284,7 @@ local function stopDarkMode()
         end)
     end
     darkModeObjects = {}
-    pcall(function()
-        Lighting.FogStart = originalLighting.FogStart or 0
-    end)
+    pcall(function() Lighting.FogStart = originalLighting.FogStart or 0 end)
 end
 
 -- ─── ESP ───────────────────────────────────────────────────────
@@ -308,21 +296,21 @@ local function createESP(plr)
     if plr == LocalPlayer then return end
     if not plr.Character then return end
     if plr.Character:FindFirstChild("NightESP") then return end
-    local c = plr.Character
+    local c      = plr.Character
     local charHrp = c:FindFirstChild("HumanoidRootPart")
     if not charHrp then return end
     local humanoid = c:FindFirstChildOfClass("Humanoid")
     if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
     local hitbox = Instance.new("BoxHandleAdornment")
-    hitbox.Name = "NightESP"
-    hitbox.Adornee = charHrp
-    hitbox.Size = Vector3.new(4, 6, 2)
-    hitbox.Color3 = Color3.fromRGB(160, 0, 255)  -- ← color actualizado
+    hitbox.Name        = "NightESP"
+    hitbox.Adornee     = charHrp
+    hitbox.Size        = Vector3.new(4, 6, 2)
+    hitbox.Color3      = Color3.fromRGB(160, 0, 255)
     hitbox.Transparency = 0.5
-    hitbox.ZIndex = 10
+    hitbox.ZIndex      = 10
     hitbox.AlwaysOnTop = true
-    hitbox.Parent = c
-    espObjects[plr] = {box = hitbox, character = c}
+    hitbox.Parent      = c
+    espObjects[plr]    = hitbox
 end
 
 local function removeESP(plr)
@@ -333,7 +321,7 @@ local function removeESP(plr)
             local humanoid = plr.Character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Automatic end
         end
-        if espObjects[plr] then espObjects[plr] = nil end
+        espObjects[plr] = nil
     end)
 end
 
@@ -348,15 +336,15 @@ local function enableESP()
             table.insert(espConnections, conn)
         end
     end
-    local playerAddedConn = Players.PlayerAdded:Connect(function(plr)
+    local conn = Players.PlayerAdded:Connect(function(plr)
         if plr == LocalPlayer then return end
-        local charAddedConn = plr.CharacterAdded:Connect(function()
+        local c = plr.CharacterAdded:Connect(function()
             task.wait(0.1)
             if espEnabled then pcall(function() createESP(plr) end) end
         end)
-        table.insert(espConnections, charAddedConn)
+        table.insert(espConnections, c)
     end)
-    table.insert(espConnections, playerAddedConn)
+    table.insert(espConnections, conn)
 end
 
 local function disableESP()
@@ -365,7 +353,7 @@ local function disableESP()
         if conn and conn.Connected then conn:Disconnect() end
     end
     espConnections = {}
-    espObjects = {}
+    espObjects     = {}
 end
 
 -- ─── SAVE / LOAD ───────────────────────────────────────────────
@@ -386,10 +374,10 @@ end
 local savedCfg = {}
 pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 
--- ─── PALETA ────────────────────────────────────────────────────
+-- ─── CONSTANTES ────────────────────────────────────────────────
 local WHITE       = Color3.fromRGB(255, 255, 255)
 local BLACK       = Color3.fromRGB(0, 0, 0)
-local FULL_HEIGHT = 483
+local FULL_HEIGHT = 428
 
 -- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
@@ -406,7 +394,7 @@ pcall(function() ScreenGui.Parent = CoreGui end)
 local Main = Instance.new("Frame", ScreenGui)
 Main.Name                   = "Main"
 Main.Size                   = UDim2.new(0, 270, 0, FULL_HEIGHT)
-Main.Position               = UDim2.new(0.5, -135, 0.5, -241)
+Main.Position               = UDim2.new(0.5, -135, 0.5, -214)
 Main.BackgroundTransparency = 1
 Main.BorderSizePixel        = 0
 Main.ClipsDescendants       = true
@@ -423,10 +411,10 @@ TopLine.BackgroundColor3 = BLACK
 TopLine.BorderSizePixel  = 0
 
 local TitleBar = Instance.new("Frame", Main)
-TitleBar.Size               = UDim2.new(1, 0, 0, 48)
-TitleBar.Position           = UDim2.new(0, 0, 0, 2)
+TitleBar.Size                   = UDim2.new(1, 0, 0, 48)
+TitleBar.Position               = UDim2.new(0, 0, 0, 2)
 TitleBar.BackgroundTransparency = 1
-TitleBar.BorderSizePixel    = 0
+TitleBar.BorderSizePixel        = 0
 
 local TitleLbl = Instance.new("TextLabel", TitleBar)
 TitleLbl.Size                   = UDim2.new(1, -46, 1, 0)
@@ -441,21 +429,21 @@ TitleLbl.TextSize               = 16
 TitleLbl.TextXAlignment         = Enum.TextXAlignment.Left
 
 local MinBtn = Instance.new("TextButton", TitleBar)
-MinBtn.Size               = UDim2.new(0, 26, 0, 26)
-MinBtn.Position           = UDim2.new(1, -36, 0.5, -13)
+MinBtn.Size                   = UDim2.new(0, 26, 0, 26)
+MinBtn.Position               = UDim2.new(1, -36, 0.5, -13)
 MinBtn.BackgroundTransparency = 1
-MinBtn.Text               = "—"
-MinBtn.TextColor3         = WHITE
-MinBtn.Font               = Enum.Font.GothamBold
-MinBtn.TextSize           = 13
-MinBtn.BorderSizePixel    = 0
+MinBtn.Text                   = "—"
+MinBtn.TextColor3             = WHITE
+MinBtn.Font                   = Enum.Font.GothamBold
+MinBtn.TextSize               = 13
+MinBtn.BorderSizePixel        = 0
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 local minStroke = Instance.new("UIStroke", MinBtn)
 minStroke.Color = BLACK; minStroke.Thickness = 1.5; minStroke.Transparency = 0
 
 local Content = Instance.new("Frame", Main)
-Content.Size                 = UDim2.new(1, 0, 1, -52)
-Content.Position             = UDim2.new(0, 0, 0, 52)
+Content.Size                   = UDim2.new(1, 0, 1, -52)
+Content.Position               = UDim2.new(0, 0, 0, 52)
 Content.BackgroundTransparency = 1
 
 local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
@@ -463,53 +451,62 @@ local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
 -- ─── TOGGLE ROW HELPER ─────────────────────────────────────────
 local function makeToggleRow(labelText, yOffset)
     local Row = Instance.new("Frame", Content)
-    Row.Size                 = UDim2.new(1, -24, 0, 46)
-    Row.Position             = UDim2.new(0, 12, 0, yOffset)
+    Row.Size                   = UDim2.new(1, -24, 0, 46)
+    Row.Position               = UDim2.new(0, 12, 0, yOffset)
     Row.BackgroundTransparency = 1
-    Row.BorderSizePixel      = 0
+    Row.BorderSizePixel        = 0
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 8)
 
     local rowStroke = Instance.new("UIStroke", Row)
     rowStroke.Color = BLACK; rowStroke.Thickness = 1.5; rowStroke.Transparency = 0
 
     local Lbl = Instance.new("TextLabel", Row)
-    Lbl.Size = UDim2.new(1,-70,1,0); Lbl.Position = UDim2.new(0,14,0,0)
-    Lbl.BackgroundTransparency = 1; Lbl.Text = labelText
-    Lbl.TextColor3 = WHITE
-    Lbl.TextStrokeColor3 = BLACK; Lbl.TextStrokeTransparency = 0
-    Lbl.Font = Enum.Font.GothamBold
-    Lbl.TextSize = 13; Lbl.TextXAlignment = Enum.TextXAlignment.Left
+    Lbl.Size                   = UDim2.new(1, -70, 1, 0)
+    Lbl.Position               = UDim2.new(0, 14, 0, 0)
+    Lbl.BackgroundTransparency = 1
+    Lbl.Text                   = labelText
+    Lbl.TextColor3             = WHITE
+    Lbl.TextStrokeColor3       = BLACK
+    Lbl.TextStrokeTransparency = 0
+    Lbl.Font                   = Enum.Font.GothamBold
+    Lbl.TextSize               = 13
+    Lbl.TextXAlignment         = Enum.TextXAlignment.Left
 
     local Btn = Instance.new("TextButton", Row)
-    Btn.Size = UDim2.new(0,46,0,24); Btn.Position = UDim2.new(1,-56,0.5,-12)
-    Btn.BackgroundTransparency = 1; Btn.Text = ""; Btn.BorderSizePixel = 0
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1,0)
+    Btn.Size                   = UDim2.new(0, 46, 0, 24)
+    Btn.Position               = UDim2.new(1, -56, 0.5, -12)
+    Btn.BackgroundTransparency = 1
+    Btn.Text                   = ""
+    Btn.BorderSizePixel        = 0
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(1, 0)
     local bStroke = Instance.new("UIStroke", Btn)
     bStroke.Color = BLACK; bStroke.Thickness = 1.5; bStroke.Transparency = 0
 
     local Knob = Instance.new("Frame", Btn)
-    Knob.Size = UDim2.new(0,18,0,18); Knob.Position = UDim2.new(0,3,0.5,-9)
-    Knob.BackgroundColor3 = WHITE; Knob.BorderSizePixel = 0
-    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1,0)
+    Knob.Size             = UDim2.new(0, 18, 0, 18)
+    Knob.Position         = UDim2.new(0, 3, 0.5, -9)
+    Knob.BackgroundColor3 = WHITE
+    Knob.BorderSizePixel  = 0
+    Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
     local kStroke = Instance.new("UIStroke", Knob)
     kStroke.Color = BLACK; kStroke.Thickness = 1; kStroke.Transparency = 0
 
     return Btn, Knob, bStroke, rowStroke
 end
 
-local function applyOn(b,k,s,rs)
-    k.Position         = UDim2.new(1,-21,0.5,-9)
+local function applyOn(_,k)
+    k.Position         = UDim2.new(1, -21, 0.5, -9)
     k.BackgroundColor3 = BLACK
 end
 
-local function applyOff(b,k,s,rs)
-    k.Position         = UDim2.new(0,3,0.5,-9)
+local function applyOff(_,k)
+    k.Position         = UDim2.new(0, 3, 0.5, -9)
     k.BackgroundColor3 = WHITE
 end
 
--- ROW 1: Auto Steal
+-- ─── ROW 1: Auto Steal ─────────────────────────────────────────
 local T1,K1,S1,RS1 = makeToggleRow("Auto Steal", 10)
-if savedCfg.AutoSteal then stealEnabled=true; startAutoSteal(); applyOn(T1,K1,S1,RS1) end
+if savedCfg.AutoSteal then stealEnabled = true; startAutoSteal(); applyOn(T1,K1) end
 T1.MouseButton1Click:Connect(function()
     stealEnabled = not stealEnabled
     if stealEnabled then
@@ -521,9 +518,9 @@ T1.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 2: Anti Ragdoll
+-- ─── ROW 2: Anti Ragdoll ───────────────────────────────────────
 local T2,K2,S2,RS2 = makeToggleRow("Anti Ragdoll", 66)
-if savedCfg.AntiRagdoll then antiRagdollEnabled=true; task.delay(1,function() setupAntiRagdoll(character) end); applyOn(T2,K2,S2,RS2) end
+if savedCfg.AntiRagdoll then antiRagdollEnabled = true; task.delay(1, function() setupAntiRagdoll(character) end); applyOn(T2,K2) end
 T2.MouseButton1Click:Connect(function()
     antiRagdollEnabled = not antiRagdollEnabled
     if antiRagdollEnabled then
@@ -535,9 +532,9 @@ T2.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 3: XRAY
+-- ─── ROW 3: XRAY ───────────────────────────────────────────────
 local T3,K3,S3,RS3 = makeToggleRow("XRAY", 122)
-if savedCfg.XRAY then unwalkEnabled=true; startUnwalk(); applyOn(T3,K3,S3,RS3) end
+if savedCfg.XRAY then unwalkEnabled = true; startUnwalk(); applyOn(T3,K3) end
 T3.MouseButton1Click:Connect(function()
     unwalkEnabled = not unwalkEnabled
     if unwalkEnabled then
@@ -549,9 +546,9 @@ T3.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 4: Dark Mode
+-- ─── ROW 4: Dark Mode ──────────────────────────────────────────
 local T4,K4,S4,RS4 = makeToggleRow("Dark Mode", 178)
-if savedCfg.DarkMode then darkModeEnabled=true; startDarkMode(); applyOn(T4,K4,S4,RS4) end
+if savedCfg.DarkMode then darkModeEnabled = true; startDarkMode(); applyOn(T4,K4) end
 T4.MouseButton1Click:Connect(function()
     darkModeEnabled = not darkModeEnabled
     if darkModeEnabled then
@@ -563,50 +560,9 @@ T4.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 5: GALAXY
-local galaxyEnabled = false
-local galaxySky     = nil
-
-local function startGalaxy()
-    -- Eliminar sky existente en Lighting para evitar conflictos
-    for _, child in pairs(Lighting:GetChildren()) do
-        if child:IsA("Sky") then child:Destroy() end
-    end
-    galaxySky = Instance.new("Sky")
-    galaxySky.SkyboxBk             = "rbxassetid://14940021683"
-    galaxySky.SkyboxDn             = "rbxassetid://14940021683"
-    galaxySky.SkyboxFt             = "rbxassetid://14940021683"
-    galaxySky.SkyboxLf             = "rbxassetid://14940021683"
-    galaxySky.SkyboxRt             = "rbxassetid://14940021683"
-    galaxySky.SkyboxUp             = "rbxassetid://14940021683"
-    galaxySky.SunTextureId         = "rbxasset://sky/sun.jpg"
-    galaxySky.SunAngularSize       = 11
-    galaxySky.MoonTextureId        = "rbxassetid://14940021683"
-    galaxySky.MoonAngularSize      = 12
-    galaxySky.StarCount            = 3000
-    galaxySky.CelestialBodiesShown = true
-    galaxySky.Parent               = Lighting  -- Parent al final
-end
-
-local function stopGalaxy()
-    if galaxySky then galaxySky:Destroy(); galaxySky = nil end
-end
-
-local TG,KG,SG,RSG = makeToggleRow("GALAXY", 234)
-TG.MouseButton1Click:Connect(function()
-    galaxyEnabled = not galaxyEnabled
-    if galaxyEnabled then
-        startGalaxy()
-        TweenService:Create(KG,ti,{Position=UDim2.new(1,-21,0.5,-9),BackgroundColor3=BLACK}):Play()
-    else
-        stopGalaxy()
-        TweenService:Create(KG,ti,{Position=UDim2.new(0,3,0.5,-9),BackgroundColor3=WHITE}):Play()
-    end
-end)
-
--- ROW 6: ESP
-local T5,K5,S5,RS5 = makeToggleRow("ESP", 290)
-if savedCfg.ESP then espEnabled=true; enableESP(); applyOn(T5,K5,S5,RS5) end
+-- ─── ROW 5: ESP ────────────────────────────────────────────────
+local T5,K5,S5,RS5 = makeToggleRow("ESP", 234)
+if savedCfg.ESP then espEnabled = true; enableESP(); applyOn(T5,K5) end
 T5.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     if espEnabled then
@@ -621,26 +577,26 @@ end)
 -- ─── SEPARATOR ─────────────────────────────────────────────────
 local Sep = Instance.new("Frame", Content)
 Sep.Size             = UDim2.new(1, -24, 0, 1)
-Sep.Position         = UDim2.new(0, 12, 0, 356)
+Sep.Position         = UDim2.new(0, 12, 0, 300)
 Sep.BackgroundColor3 = WHITE
 Sep.BorderSizePixel  = 0
 
 -- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
-SaveFrame.Size               = UDim2.new(1, -24, 0, 40)
-SaveFrame.Position           = UDim2.new(0, 12, 0, 368)
+SaveFrame.Size                   = UDim2.new(1, -24, 0, 40)
+SaveFrame.Position               = UDim2.new(0, 12, 0, 312)
 SaveFrame.BackgroundTransparency = 1
 
 local SaveBtn = Instance.new("TextButton", SaveFrame)
-SaveBtn.Size               = UDim2.new(1, 0, 1, 0)
+SaveBtn.Size                   = UDim2.new(1, 0, 1, 0)
 SaveBtn.BackgroundTransparency = 1
-SaveBtn.Text               = "SAVE CONFIG"
-SaveBtn.Font               = Enum.Font.GothamBlack
-SaveBtn.TextSize           = 13
-SaveBtn.TextColor3         = WHITE
-SaveBtn.TextStrokeColor3   = BLACK
+SaveBtn.Text                   = "SAVE CONFIG"
+SaveBtn.Font                   = Enum.Font.GothamBlack
+SaveBtn.TextSize               = 13
+SaveBtn.TextColor3             = WHITE
+SaveBtn.TextStrokeColor3       = BLACK
 SaveBtn.TextStrokeTransparency = 0
-SaveBtn.BorderSizePixel    = 0
+SaveBtn.BorderSizePixel        = 0
 Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 8)
 local saveStroke = Instance.new("UIStroke", SaveBtn)
 saveStroke.Color = BLACK; saveStroke.Thickness = 1.5; saveStroke.Transparency = 0
@@ -657,11 +613,11 @@ do
     local dragging, dragStart, startPos = false, nil, nil
     TitleBar.InputBegan:Connect(function(inp)
         if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging=true; dragStart=inp.Position; startPos=Main.Position
+            dragging = true; dragStart = inp.Position; startPos = Main.Position
         end
     end)
     UserInputService.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
     UserInputService.InputChanged:Connect(function(inp)
         if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
@@ -686,12 +642,13 @@ task.spawn(function()
     local t = 0
     while ScreenGui.Parent do
         t = t + 0.04
-        local pulse = (math.sin(t) + 1) / 2
-        grimStroke.Transparency = 0.05 + pulse * 0.5
+        grimStroke.Transparency = 0.05 + ((math.sin(t) + 1) / 2) * 0.5
         task.wait(0.03)
     end
 end)
 
 -- ─── OPEN ANIMATION ────────────────────────────────────────────
-Main.Size = UDim2.new(0,0,0,0)
-TweenService:Create(Main, TweenInfo.new(0.4,Enum.EasingStyle.Back,Enum.EasingDirection.Out), {Size=UDim2.new(0,270,0,FULL_HEIGHT)}):Play()
+Main.Size = UDim2.new(0, 0, 0, 0)
+TweenService:Create(Main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+    Size = UDim2.new(0, 270, 0, FULL_HEIGHT)
+}):Play()
