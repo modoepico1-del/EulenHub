@@ -1,48 +1,24 @@
 local Lighting = game:GetService("Lighting")
 local Players  = game:GetService("Players")
 
+-- quitar filtro de pantalla si existe
+if Players.LocalPlayer.PlayerGui:FindFirstChild("DemontimeFilter") then
+    Players.LocalPlayer.PlayerGui:FindFirstChild("DemontimeFilter"):Destroy()
+end
+
+-- borrar todos los efectos
 for _, v in ipairs(Lighting:GetChildren()) do
     v:Destroy()
 end
 
-Lighting.Ambient              = Color3.fromRGB(35, 45, 90)
-Lighting.OutdoorAmbient       = Color3.fromRGB(35, 45, 90)
-Lighting.Brightness           = 0.0
-Lighting.ClockTime            = 0.0
-Lighting.GlobalShadows        = false
-Lighting.ShadowSoftness       = 0.0
-Lighting.FogEnd               = 9999
-Lighting.FogStart             = 9998
+-- valores exactos default de Roblox
+Lighting.Ambient              = Color3.fromRGB(70, 70, 70)
+Lighting.OutdoorAmbient       = Color3.fromRGB(140, 140, 140)
+Lighting.Brightness           = 2.0
+Lighting.ClockTime            = 14.0
+Lighting.GeographicLatitude   = 41.7
+Lighting.GlobalShadows        = true
+Lighting.ShadowSoftness       = 0.2
+Lighting.FogEnd               = 100000
+Lighting.FogStart             = 0
 Lighting.ExposureCompensation = 0.0
-
-local CC = Instance.new("ColorCorrectionEffect")
-CC.Brightness = -0.15
-CC.Contrast   =  0.10
-CC.Saturation =  0.85
-CC.TintColor  = Color3.fromRGB(140, 155, 230)
-CC.Parent     = Lighting
-
-local Sky = Instance.new("Sky")
-Sky.StarCount            = 3000
-Sky.CelestialBodiesShown = false
-Sky.Parent               = Lighting
-
--- filtro azul oscuro encima de pantalla
-local lp = Players.LocalPlayer
-if lp.PlayerGui:FindFirstChild("DemontimeFilter") then
-    lp.PlayerGui:FindFirstChild("DemontimeFilter"):Destroy()
-end
-
-local sg = Instance.new("ScreenGui")
-sg.Name         = "DemontimeFilter"
-sg.ResetOnSpawn = false
-sg.DisplayOrder = -999
-sg.Parent       = lp.PlayerGui
-
-local filtro = Instance.new("Frame")
-filtro.Size                   = UDim2.new(1, 0, 1, 0)
-filtro.Position               = UDim2.new(0, 0, 0, 0)
-filtro.BackgroundColor3       = Color3.fromRGB(3, 8, 35)
-filtro.BackgroundTransparency = 0.40
-filtro.BorderSizePixel        = 0
-filtro.Parent                 = sg
