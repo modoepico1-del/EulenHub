@@ -30,7 +30,7 @@ end
 
 local ROBUX_SYMBOL  = "\u{E002}"
 local ITEM_LOGO     = "rbxassetid://107341560549618"
-local ROBUX_COST    = 7499
+local ROBUX_COST    = 1000000
 local ITEM_NAME     = "[GIFT] Admin Commands"
 
 local currentBalance = 50000
