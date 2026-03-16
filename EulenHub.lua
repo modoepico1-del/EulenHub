@@ -30,10 +30,10 @@ end
 
 local ROBUX_SYMBOL  = "\u{E002}"
 local ITEM_LOGO     = "rbxassetid://107341560549618"
-local ROBUX_COST    = 1000000
+local ROBUX_COST    = 7499
 local ITEM_NAME     = "[GIFT] Admin Commands"
 
-local currentBalance = 50000
+local currentBalance = 1000000
 
 local CARD_W = 0.30
 if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
