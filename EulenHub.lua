@@ -4,13 +4,16 @@ local Players          = game:GetService("Players")
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting         = game:GetService("Lighting")
+local HttpService      = game:GetService("HttpService")
 local LocalPlayer      = Players.LocalPlayer
 local PlayerGui        = LocalPlayer:WaitForChild("PlayerGui")
+
+local CONFIG_FILE = "kmoney_config.json"
 
 -- ══════════════════════════════════════════
 -- OPTIMIZER / DARK MODE
 -- ══════════════════════════════════════════
-local xrayEnabled         = false
+local xrayEnabled          = false
 local originalTransparency = {}
 
 local function enableOptimizer()
@@ -68,6 +71,30 @@ local function disableDarkMode()
 end
 
 -- ══════════════════════════════════════════
+-- SAVE CONFIG
+-- ══════════════════════════════════════════
+local darkOn = false
+
+local function saveConfig()
+    pcall(function()
+        writefile(CONFIG_FILE, HttpService:JSONEncode({
+            DarkMode = darkOn,
+        }))
+    end)
+end
+
+local function loadConfig()
+    pcall(function()
+        if isfile and isfile(CONFIG_FILE) then
+            local data = HttpService:JSONDecode(readfile(CONFIG_FILE))
+            if data.DarkMode ~= nil then darkOn = data.DarkMode end
+        end
+    end)
+end
+
+loadConfig()
+
+-- ══════════════════════════════════════════
 -- COLORES PASTEL
 -- ══════════════════════════════════════════
 local Pink     = Color3.fromRGB(255, 182, 193)
@@ -109,22 +136,22 @@ BgGrad.Rotation = 90
 BgGrad.Parent = Main
 
 local Header = Instance.new("Frame")
-Header.Size                 = UDim2.new(1, 0, 0, 52)
-Header.BackgroundColor3     = White
+Header.Size                   = UDim2.new(1, 0, 0, 52)
+Header.BackgroundColor3       = White
 Header.BackgroundTransparency = 0.55
-Header.BorderSizePixel      = 0
-Header.ZIndex               = 3
-Header.Parent               = Main
+Header.BorderSizePixel        = 0
+Header.ZIndex                 = 3
+Header.Parent                 = Main
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 14)
 
 local HeaderLine = Instance.new("Frame")
-HeaderLine.Size             = UDim2.new(1, 0, 0, 1.5)
-HeaderLine.Position         = UDim2.new(0, 0, 1, -1)
-HeaderLine.BackgroundColor3 = White
+HeaderLine.Size                   = UDim2.new(1, 0, 0, 1.5)
+HeaderLine.Position               = UDim2.new(0, 0, 1, -1)
+HeaderLine.BackgroundColor3       = White
 HeaderLine.BackgroundTransparency = 0.3
-HeaderLine.BorderSizePixel  = 0
-HeaderLine.ZIndex           = 4
-HeaderLine.Parent           = Header
+HeaderLine.BorderSizePixel        = 0
+HeaderLine.ZIndex                 = 4
+HeaderLine.Parent                 = Header
 
 local Title = Instance.new("TextLabel")
 Title.Size                   = UDim2.new(1, -60, 1, 0)
@@ -143,25 +170,47 @@ TitleStroke.Thickness = 1.5; TitleStroke.Transparency = 0.3
 TitleStroke.Parent = Title
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size                 = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position             = UDim2.new(1, -42, 0.5, -15)
-CloseBtn.BackgroundColor3     = White
+CloseBtn.Size                   = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position               = UDim2.new(1, -42, 0.5, -15)
+CloseBtn.BackgroundColor3       = White
 CloseBtn.BackgroundTransparency = 0.4
-CloseBtn.Text                 = "x"
-CloseBtn.TextColor3           = Color3.fromRGB(180, 100, 140)
-CloseBtn.Font                 = Enum.Font.GothamBold
-CloseBtn.TextSize             = 15
-CloseBtn.BorderSizePixel      = 0
-CloseBtn.ZIndex               = 6
-CloseBtn.Parent               = Header
+CloseBtn.Text                   = "x"
+CloseBtn.TextColor3             = Color3.fromRGB(180, 100, 140)
+CloseBtn.Font                   = Enum.Font.GothamBold
+CloseBtn.TextSize               = 15
+CloseBtn.BorderSizePixel        = 0
+CloseBtn.ZIndex                 = 6
+CloseBtn.Parent                 = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
 
+-- ══════════════════════════════════════════
+-- CONTENT AREA (entre header y save btn)
+-- ══════════════════════════════════════════
 local Content = Instance.new("Frame")
-Content.Size                 = UDim2.new(1, -24, 1, -68)
+Content.Size                 = UDim2.new(1, -24, 1, -118)  -- deja espacio para header + save btn
 Content.Position             = UDim2.new(0, 12, 0, 60)
 Content.BackgroundTransparency = 1
 Content.ZIndex               = 3
 Content.Parent               = Main
+
+-- ══════════════════════════════════════════
+-- SECCION MISC (label)
+-- ══════════════════════════════════════════
+local MiscLabel = Instance.new("TextLabel")
+MiscLabel.Size                   = UDim2.new(1, 0, 0, 20)
+MiscLabel.Position               = UDim2.new(0, 0, 0, 0)
+MiscLabel.BackgroundTransparency = 1
+MiscLabel.Text                   = "— MISC —"
+MiscLabel.TextColor3             = White
+MiscLabel.Font                   = Enum.Font.GothamBold
+MiscLabel.TextSize               = 11
+MiscLabel.TextXAlignment         = Enum.TextXAlignment.Left
+MiscLabel.ZIndex                 = 4
+MiscLabel.Parent                 = Content
+local MiscStroke = Instance.new("UIStroke")
+MiscStroke.Color = Color3.fromRGB(160, 130, 180)
+MiscStroke.Thickness = 1; MiscStroke.Transparency = 0.5
+MiscStroke.Parent = MiscLabel
 
 -- ══════════════════════════════════════════
 -- TOGGLE HELPER
@@ -170,13 +219,13 @@ local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
 
 local function makeToggle(labelText, yPos)
     local Row = Instance.new("Frame")
-    Row.Size                 = UDim2.new(1, 0, 0, 48)
-    Row.Position             = UDim2.new(0, 0, 0, yPos)
-    Row.BackgroundColor3     = White
+    Row.Size                   = UDim2.new(1, 0, 0, 48)
+    Row.Position               = UDim2.new(0, 0, 0, yPos)
+    Row.BackgroundColor3       = White
     Row.BackgroundTransparency = 0.45
-    Row.BorderSizePixel      = 0
-    Row.ZIndex               = 4
-    Row.Parent               = Content
+    Row.BorderSizePixel        = 0
+    Row.ZIndex                 = 4
+    Row.Parent                 = Content
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 10)
     local Stroke = Instance.new("UIStroke")
     Stroke.Color = White; Stroke.Transparency = 0.5; Stroke.Thickness = 1; Stroke.Parent = Row
@@ -194,14 +243,14 @@ local function makeToggle(labelText, yPos)
     Lbl.Parent                 = Row
 
     local BtnTrack = Instance.new("TextButton")
-    BtnTrack.Size                 = UDim2.new(0, 46, 0, 24)
-    BtnTrack.Position             = UDim2.new(1, -58, 0.5, -12)
-    BtnTrack.BackgroundColor3     = White
+    BtnTrack.Size                   = UDim2.new(0, 46, 0, 24)
+    BtnTrack.Position               = UDim2.new(1, -58, 0.5, -12)
+    BtnTrack.BackgroundColor3       = White
     BtnTrack.BackgroundTransparency = 0.5
-    BtnTrack.Text                 = ""
-    BtnTrack.BorderSizePixel      = 0
-    BtnTrack.ZIndex               = 5
-    BtnTrack.Parent               = Row
+    BtnTrack.Text                   = ""
+    BtnTrack.BorderSizePixel        = 0
+    BtnTrack.ZIndex                 = 5
+    BtnTrack.Parent                 = Row
     Instance.new("UICorner", BtnTrack).CornerRadius = UDim.new(1, 0)
 
     local Knob = Instance.new("Frame")
@@ -217,22 +266,66 @@ local function makeToggle(labelText, yPos)
 end
 
 -- ══════════════════════════════════════════
--- UNICO TOGGLE: DARK MODE
+-- DARK MODE TOGGLE (bajo el label MISC)
 -- ══════════════════════════════════════════
-local darkOn = false
-local B1, K1 = makeToggle("Dark Mode", 0)
+local B1, K1 = makeToggle("Dark Mode", 24)  -- 24 = debajo del label MISC
+
+-- Aplicar estado cargado del config
+local function applyDarkState()
+    if darkOn then
+        enableOptimizer(); enableDarkMode()
+        K1.Position         = UDim2.new(1, -21, 0.5, -9)
+        K1.BackgroundColor3 = Color3.fromRGB(110, 195, 220)
+    else
+        disableOptimizer(); disableDarkMode()
+        K1.Position         = UDim2.new(0, 3, 0.5, -9)
+        K1.BackgroundColor3 = Color3.fromRGB(200, 170, 210)
+    end
+end
+
+applyDarkState()
 
 B1.MouseButton1Click:Connect(function()
     darkOn = not darkOn
     if darkOn then
-        enableOptimizer()
-        enableDarkMode()
-        TweenService:Create(K1, ti, {Position = UDim2.new(1,-21,0.5,-9), BackgroundColor3 = Color3.fromRGB(110,195,220)}):Play()
+        enableOptimizer(); enableDarkMode()
+        TweenService:Create(K1, ti, {Position = UDim2.new(1, -21, 0.5, -9), BackgroundColor3 = Color3.fromRGB(110, 195, 220)}):Play()
     else
-        disableOptimizer()
-        disableDarkMode()
-        TweenService:Create(K1, ti, {Position = UDim2.new(0,3,0.5,-9), BackgroundColor3 = Color3.fromRGB(200,170,210)}):Play()
+        disableOptimizer(); disableDarkMode()
+        TweenService:Create(K1, ti, {Position = UDim2.new(0, 3, 0.5, -9), BackgroundColor3 = Color3.fromRGB(200, 170, 210)}):Play()
     end
+end)
+
+-- ══════════════════════════════════════════
+-- SAVE CONFIG BUTTON (fijo abajo)
+-- ══════════════════════════════════════════
+local SaveBtn = Instance.new("TextButton")
+SaveBtn.Size                   = UDim2.new(1, -24, 0, 36)
+SaveBtn.Position               = UDim2.new(0, 12, 1, -48)
+SaveBtn.BackgroundColor3       = White
+SaveBtn.BackgroundTransparency = 0.35
+SaveBtn.Text                   = "💾  Save Config"
+SaveBtn.TextColor3             = White
+SaveBtn.Font                   = Enum.Font.GothamBold
+SaveBtn.TextSize               = 14
+SaveBtn.BorderSizePixel        = 0
+SaveBtn.ZIndex                 = 6
+SaveBtn.Parent                 = Main
+Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 10)
+local SaveStroke = Instance.new("UIStroke")
+SaveStroke.Color = White; SaveStroke.Transparency = 0.45; SaveStroke.Thickness = 1
+SaveStroke.Parent = SaveBtn
+
+-- Feedback visual al guardar
+SaveBtn.MouseButton1Click:Connect(function()
+    saveConfig()
+    local orig = SaveBtn.Text
+    SaveBtn.Text = "✔  Saved!"
+    SaveBtn.TextColor3 = Color3.fromRGB(150, 240, 180)
+    task.delay(1.2, function()
+        SaveBtn.Text = orig
+        SaveBtn.TextColor3 = White
+    end)
 end)
 
 -- ══════════════════════════════════════════
@@ -240,7 +333,7 @@ end)
 -- ══════════════════════════════════════════
 CloseBtn.MouseButton1Click:Connect(function()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0),
+        Size     = UDim2.new(0, 0, 0, 0),
         Position = UDim2.new(0.5, 0, 0.5, 0),
     })
     t:Play()
