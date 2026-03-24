@@ -1,4 +1,4 @@
--- KMONEY HUB - 500x300
+-- KMONEY HUB - 500x400
 
 local Players          = game:GetService("Players")
 local TweenService     = game:GetService("TweenService")
@@ -10,6 +10,70 @@ local LocalPlayer      = Players.LocalPlayer
 local PlayerGui        = LocalPlayer:WaitForChild("PlayerGui")
 
 local CONFIG_FILE = "kmoney_config.json"
+
+-- ══════════════════════════════════════════
+-- BILLBOARD PCT (encima del personaje)
+-- ══════════════════════════════════════════
+local billboardGui = nil
+local billboardPct = nil
+
+local function createBillboard()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local head = char:FindFirstChild("Head")
+    if not head then return end
+
+    if billboardGui then billboardGui:Destroy() end
+
+    billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name            = "KmoneyStealPct"
+    billboardGui.Adornee         = head
+    billboardGui.Size            = UDim2.new(0, 80, 0, 30)
+    billboardGui.StudsOffset     = Vector3.new(0, 3, 0)
+    billboardGui.AlwaysOnTop     = true
+    billboardGui.ResetOnSpawn    = false
+    billboardGui.Enabled         = false
+    billboardGui.Parent          = LocalPlayer.PlayerGui
+
+    billboardPct = Instance.new("TextLabel")
+    billboardPct.Size                   = UDim2.new(1, 0, 1, 0)
+    billboardPct.BackgroundTransparency = 1
+    billboardPct.Text                   = ""
+    billboardPct.TextColor3             = Color3.fromRGB(255, 255, 255)
+    billboardPct.TextStrokeColor3       = Color3.fromRGB(160, 130, 180)
+    billboardPct.TextStrokeTransparency = 0
+    billboardPct.Font                   = Enum.Font.GothamBlack
+    billboardPct.TextSize               = 18
+    billboardPct.Parent                 = billboardGui
+end
+
+local function showBillboardPct(pct)
+    if not billboardGui or not billboardGui.Parent then createBillboard() end
+    if billboardGui then
+        billboardGui.Enabled = true
+        billboardPct.Text    = pct .. "%"
+        -- color progresivo: blanco → verde
+        local t = pct / 100
+        billboardPct.TextColor3 = Color3.fromRGB(
+            255 - math.floor(t * 105),
+            255,
+            180 + math.floor(t * 75)
+        )
+    end
+end
+
+local function hideBillboard()
+    if billboardGui then
+        billboardGui.Enabled = false
+        if billboardPct then billboardPct.Text = "" end
+    end
+end
+
+-- Recrear billboard si el personaje respawnea
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    createBillboard()
+end)
 
 -- ══════════════════════════════════════════
 -- VARIABLES STEAL
@@ -38,8 +102,7 @@ local function findNearestPrompt()
             if part and part:IsA("BasePart") then
                 local d = (hrp.Position - part.Position).Magnitude
                 if d < minDist then
-                    minDist = d; nearest = desc
-                    nearName = part.Name
+                    minDist = d; nearest = desc; nearName = part.Name
                 end
             end
         end
@@ -143,13 +206,12 @@ local SkyBlue  = Color3.fromRGB(110, 195, 220)
 local White    = Color3.fromRGB(255, 255, 255)
 local GreenOk  = Color3.fromRGB(150, 240, 180)
 
--- Limpiar hub anterior
 if PlayerGui:FindFirstChild("KmoneyHub") then
     PlayerGui:FindFirstChild("KmoneyHub"):Destroy()
 end
 
 -- ══════════════════════════════════════════
--- GUI  (500 x 400 para dar espacio)
+-- GUI
 -- ══════════════════════════════════════════
 local GUI_W, GUI_H = 500, 400
 
@@ -178,7 +240,6 @@ BgGrad.Color = ColorSequence.new({
 BgGrad.Rotation = 90
 BgGrad.Parent = Main
 
--- Header
 local Header = Instance.new("Frame")
 Header.Size                   = UDim2.new(1, 0, 0, 52)
 Header.BackgroundColor3       = White
@@ -227,7 +288,6 @@ CloseBtn.ZIndex                 = 6
 CloseBtn.Parent                 = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
 
--- Content
 local Content = Instance.new("Frame")
 Content.Size                 = UDim2.new(1, -24, 1, -118)
 Content.Position             = UDim2.new(0, 12, 0, 60)
@@ -236,7 +296,7 @@ Content.ZIndex               = 3
 Content.Parent               = Main
 
 -- ══════════════════════════════════════════
--- TOGGLE HELPER
+-- HELPERS
 -- ══════════════════════════════════════════
 local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
 
@@ -254,7 +314,6 @@ local function makeSectionLabel(text, yPos)
     Lbl.Parent                 = Content
     local S = Instance.new("UIStroke")
     S.Color = Color3.fromRGB(160,130,180); S.Thickness = 1; S.Transparency = 0.5; S.Parent = Lbl
-    return Lbl
 end
 
 local function makeToggle(labelText, yPos)
@@ -310,10 +369,9 @@ end
 -- ══════════════════════════════════════════
 makeSectionLabel("— STEAL —", 0)
 
--- Toggle Auto Steal
 local B_steal, K_steal = makeToggle("Auto Steal", 24)
 
--- Barra de progreso del steal
+-- Barra de progreso en el hub
 local SBRow = Instance.new("Frame")
 SBRow.Size                   = UDim2.new(1, 0, 0, 44)
 SBRow.Position               = UDim2.new(0, 0, 0, 80)
@@ -326,7 +384,6 @@ Instance.new("UICorner", SBRow).CornerRadius = UDim.new(0, 10)
 local SBStroke = Instance.new("UIStroke")
 SBStroke.Color = White; SBStroke.Transparency = 0.5; SBStroke.Thickness = 1; SBStroke.Parent = SBRow
 
--- Status label
 SBStatus = Instance.new("TextLabel")
 SBStatus.Size                   = UDim2.new(0.5, 0, 0, 18)
 SBStatus.Position               = UDim2.new(0, 14, 0, 4)
@@ -339,7 +396,6 @@ SBStatus.TextXAlignment         = Enum.TextXAlignment.Left
 SBStatus.ZIndex                 = 5
 SBStatus.Parent                 = SBRow
 
--- Porcentaje
 SBPct = Instance.new("TextLabel")
 SBPct.Size                   = UDim2.new(0.5, -14, 0, 18)
 SBPct.Position               = UDim2.new(0.5, 0, 0, 4)
@@ -353,7 +409,6 @@ SBPct.Visible                = false
 SBPct.ZIndex                 = 5
 SBPct.Parent                 = SBRow
 
--- Track de la barra
 local SBTrack = Instance.new("Frame")
 SBTrack.Size                   = UDim2.new(1, -28, 0, 12)
 SBTrack.Position               = UDim2.new(0, 14, 0, 26)
@@ -364,7 +419,6 @@ SBTrack.ZIndex                 = 5
 SBTrack.Parent                 = SBRow
 Instance.new("UICorner", SBTrack).CornerRadius = UDim.new(1, 0)
 
--- Fill de la barra
 SBFill = Instance.new("Frame")
 SBFill.Size             = UDim2.new(0, 0, 1, 0)
 SBFill.BackgroundColor3 = SkyBlue
@@ -379,7 +433,6 @@ FillGrad.Color = ColorSequence.new({
 })
 FillGrad.Parent = SBFill
 
--- Phantom letters (7 bloques que se revelan)
 local phantomFrame = Instance.new("Frame")
 phantomFrame.Size                   = UDim2.new(0, 140, 0, 18)
 phantomFrame.Position               = UDim2.new(0.5, -70, 0, 4)
@@ -409,11 +462,10 @@ local progressConnection = nil
 
 local function ResetProgressBar()
     for _, lbl in ipairs(phantomLetterLabels) do lbl.TextTransparency = 1 end
-    if SBPct    then SBPct.Visible = false end
-    if SBFill   then
-        TweenService:Create(SBFill, TweenInfo.new(0.15), {Size = UDim2.new(0,0,1,0)}):Play()
-    end
+    if SBPct  then SBPct.Visible = false end
+    if SBFill then TweenService:Create(SBFill, TweenInfo.new(0.15), {Size = UDim2.new(0,0,1,0)}):Play() end
     if SBStatus then SBStatus.Text = "READY" end
+    hideBillboard()
 end
 
 local function UpdatePhantomLetters(prog)
@@ -422,16 +474,11 @@ local function UpdatePhantomLetters(prog)
     for i, lbl in ipairs(phantomLetterLabels) do
         lbl.TextTransparency = i <= lettersToShow and 0 or 1
     end
-    if SBPct then
-        SBPct.Visible = true
-        SBPct.Text = math.floor(prog * 100) .. "%"
-    end
-    if SBFill then
-        SBFill.Size = UDim2.new(prog, 0, 1, 0)
-    end
-    if SBStatus then
-        SBStatus.Text = isStealing and "STEALING..." or "READY"
-    end
+    if SBPct then SBPct.Visible = true; SBPct.Text = math.floor(prog*100).."%" end
+    if SBFill then SBFill.Size = UDim2.new(prog, 0, 1, 0) end
+    if SBStatus then SBStatus.Text = isStealing and "STEALING..." or "READY" end
+    -- Actualizar billboard encima del personaje
+    showBillboardPct(math.floor(prog * 100))
 end
 
 local function cachePromptData(prompt)
@@ -496,10 +543,10 @@ local function stopAutoSteal()
     ResetProgressBar()
 end
 
--- Conectar toggle Auto Steal
+-- Estado inicial del toggle
 if autoStealOn then
     Enabled.AutoSteal = true
-    K_steal.Position = UDim2.new(1,-21,0.5,-9)
+    K_steal.Position         = UDim2.new(1,-21,0.5,-9)
     K_steal.BackgroundColor3 = SkyBlue
     startAutoSteal()
 end
@@ -584,6 +631,7 @@ end)
 -- ══════════════════════════════════════════
 CloseBtn.MouseButton1Click:Connect(function()
     stopAutoSteal()
+    hideBillboard()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size     = UDim2.new(0, 0, 0, 0),
         Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -614,6 +662,9 @@ end)
 -- ══════════════════════════════════════════
 -- ANIMACION ENTRADA
 -- ══════════════════════════════════════════
+task.wait(0.1)
+createBillboard()
+
 Main.Size = UDim2.new(0, 0, 0, 0)
 Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
