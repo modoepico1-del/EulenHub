@@ -1,114 +1,14 @@
--- KMONEY HUB - 500x400
+-- KMONEY HUB - 500x300
 
 local Players          = game:GetService("Players")
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting         = game:GetService("Lighting")
 local HttpService      = game:GetService("HttpService")
-local RunService       = game:GetService("RunService")
 local LocalPlayer      = Players.LocalPlayer
 local PlayerGui        = LocalPlayer:WaitForChild("PlayerGui")
 
 local CONFIG_FILE = "kmoney_config.json"
-
--- ══════════════════════════════════════════
--- BILLBOARD PCT (encima del personaje)
--- ══════════════════════════════════════════
-local billboardGui = nil
-local billboardPct = nil
-
-local function createBillboard()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local head = char:FindFirstChild("Head")
-    if not head then return end
-
-    if billboardGui then billboardGui:Destroy() end
-
-    billboardGui = Instance.new("BillboardGui")
-    billboardGui.Name            = "KmoneyStealPct"
-    billboardGui.Adornee         = head
-    billboardGui.Size            = UDim2.new(0, 80, 0, 30)
-    billboardGui.StudsOffset     = Vector3.new(0, 3, 0)
-    billboardGui.AlwaysOnTop     = true
-    billboardGui.ResetOnSpawn    = false
-    billboardGui.Enabled         = false
-    billboardGui.Parent          = LocalPlayer.PlayerGui
-
-    billboardPct = Instance.new("TextLabel")
-    billboardPct.Size                   = UDim2.new(1, 0, 1, 0)
-    billboardPct.BackgroundTransparency = 1
-    billboardPct.Text                   = ""
-    billboardPct.TextColor3             = Color3.fromRGB(255, 255, 255)
-    billboardPct.TextStrokeColor3       = Color3.fromRGB(160, 130, 180)
-    billboardPct.TextStrokeTransparency = 0
-    billboardPct.Font                   = Enum.Font.GothamBlack
-    billboardPct.TextSize               = 18
-    billboardPct.Parent                 = billboardGui
-end
-
-local function showBillboardPct(pct)
-    if not billboardGui or not billboardGui.Parent then createBillboard() end
-    if billboardGui then
-        billboardGui.Enabled = true
-        billboardPct.Text    = pct .. "%"
-        -- color progresivo: blanco → verde
-        local t = pct / 100
-        billboardPct.TextColor3 = Color3.fromRGB(
-            255 - math.floor(t * 105),
-            255,
-            180 + math.floor(t * 75)
-        )
-    end
-end
-
-local function hideBillboard()
-    if billboardGui then
-        billboardGui.Enabled = false
-        if billboardPct then billboardPct.Text = "" end
-    end
-end
-
--- Recrear billboard si el personaje respawnea
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.5)
-    createBillboard()
-end)
-
--- ══════════════════════════════════════════
--- VARIABLES STEAL
--- ══════════════════════════════════════════
-local StealData      = {}
-local isStealing     = false
-local stealStartTime = 0
-local phantomLetterLabels = {}
-local SBPct, SBFill, SBStatus = nil, nil, nil
-
-local Values = {
-    STEAL_DURATION = 0.7,
-}
-local Connections = {}
-local Enabled     = { AutoSteal = false }
-
-local function findNearestPrompt()
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil, nil, nil end
-    local nearest, minDist, nearName = nil, math.huge, nil
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then return nil, nil, nil end
-    for _, desc in ipairs(plots:GetDescendants()) do
-        if desc:IsA("ProximityPrompt") and desc.Enabled and desc.ActionText == "Steal" then
-            local part = desc.Parent
-            if part and part:IsA("BasePart") then
-                local d = (hrp.Position - part.Position).Magnitude
-                if d < minDist then
-                    minDist = d; nearest = desc; nearName = part.Name
-                end
-            end
-        end
-    end
-    return nearest, minDist, nearName
-end
 
 -- ══════════════════════════════════════════
 -- OPTIMIZER / DARK MODE
@@ -173,14 +73,12 @@ end
 -- ══════════════════════════════════════════
 -- SAVE CONFIG
 -- ══════════════════════════════════════════
-local darkOn      = false
-local autoStealOn = false
+local darkOn = false
 
 local function saveConfig()
     pcall(function()
         writefile(CONFIG_FILE, HttpService:JSONEncode({
-            DarkMode  = darkOn,
-            AutoSteal = autoStealOn,
+            DarkMode = darkOn,
         }))
     end)
 end
@@ -189,8 +87,7 @@ local function loadConfig()
     pcall(function()
         if isfile and isfile(CONFIG_FILE) then
             local data = HttpService:JSONDecode(readfile(CONFIG_FILE))
-            if data.DarkMode  ~= nil then darkOn      = data.DarkMode  end
-            if data.AutoSteal ~= nil then autoStealOn = data.AutoSteal end
+            if data.DarkMode ~= nil then darkOn = data.DarkMode end
         end
     end)
 end
@@ -198,13 +95,13 @@ end
 loadConfig()
 
 -- ══════════════════════════════════════════
--- COLORES PASTEL
+-- COLORES  (#DF6589 → #3C1053)
 -- ══════════════════════════════════════════
-local Pink     = Color3.fromRGB(255, 182, 193)
-local Lavender = Color3.fromRGB(200, 195, 240)
-local SkyBlue  = Color3.fromRGB(110, 195, 220)
+local HotPink  = Color3.fromRGB(223, 101, 137)  -- #DF6589
+local DeepPlum = Color3.fromRGB(60,  16,  83)   -- #3C1053
 local White    = Color3.fromRGB(255, 255, 255)
-local GreenOk  = Color3.fromRGB(150, 240, 180)
+local KnobOff  = Color3.fromRGB(180, 120, 160)
+local KnobOn   = Color3.fromRGB(223, 101, 137)
 
 if PlayerGui:FindFirstChild("KmoneyHub") then
     PlayerGui:FindFirstChild("KmoneyHub"):Destroy()
@@ -213,8 +110,6 @@ end
 -- ══════════════════════════════════════════
 -- GUI
 -- ══════════════════════════════════════════
-local GUI_W, GUI_H = 500, 400
-
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KmoneyHub"
 ScreenGui.ResetOnSpawn   = false
@@ -223,27 +118,28 @@ ScreenGui.Parent         = PlayerGui
 
 local Main = Instance.new("Frame")
 Main.Name             = "Main"
-Main.Size             = UDim2.new(0, GUI_W, 0, GUI_H)
-Main.Position         = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2)
-Main.BackgroundColor3 = White
+Main.Size             = UDim2.new(0, 500, 0, 300)
+Main.Position         = UDim2.new(0.5, -250, 0.5, -150)
+Main.BackgroundColor3 = DeepPlum
 Main.BorderSizePixel  = 0
 Main.ClipsDescendants = true
 Main.Parent           = ScreenGui
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
+-- Gradiente de fondo: HotPink arriba → DeepPlum abajo
 local BgGrad = Instance.new("UIGradient")
 BgGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.0, Pink),
-    ColorSequenceKeypoint.new(0.5, Lavender),
-    ColorSequenceKeypoint.new(1.0, SkyBlue),
+    ColorSequenceKeypoint.new(0.0, HotPink),
+    ColorSequenceKeypoint.new(1.0, DeepPlum),
 })
-BgGrad.Rotation = 90
+BgGrad.Rotation = 135
 BgGrad.Parent = Main
 
+-- Header
 local Header = Instance.new("Frame")
 Header.Size                   = UDim2.new(1, 0, 0, 52)
-Header.BackgroundColor3       = White
-Header.BackgroundTransparency = 0.55
+Header.BackgroundColor3       = DeepPlum
+Header.BackgroundTransparency = 0.3
 Header.BorderSizePixel        = 0
 Header.ZIndex                 = 3
 Header.Parent                 = Main
@@ -252,7 +148,7 @@ Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 14)
 local HeaderLine = Instance.new("Frame")
 HeaderLine.Size                   = UDim2.new(1, 0, 0, 1.5)
 HeaderLine.Position               = UDim2.new(0, 0, 1, -1)
-HeaderLine.BackgroundColor3       = White
+HeaderLine.BackgroundColor3       = HotPink
 HeaderLine.BackgroundTransparency = 0.3
 HeaderLine.BorderSizePixel        = 0
 HeaderLine.ZIndex                 = 4
@@ -270,17 +166,17 @@ Title.TextXAlignment         = Enum.TextXAlignment.Left
 Title.ZIndex                 = 5
 Title.Parent                 = Header
 local TitleStroke = Instance.new("UIStroke")
-TitleStroke.Color = Color3.fromRGB(160, 130, 180)
-TitleStroke.Thickness = 1.5; TitleStroke.Transparency = 0.3
+TitleStroke.Color = HotPink
+TitleStroke.Thickness = 1.5; TitleStroke.Transparency = 0.4
 TitleStroke.Parent = Title
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size                   = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position               = UDim2.new(1, -42, 0.5, -15)
-CloseBtn.BackgroundColor3       = White
-CloseBtn.BackgroundTransparency = 0.4
+CloseBtn.BackgroundColor3       = HotPink
+CloseBtn.BackgroundTransparency = 0.3
 CloseBtn.Text                   = "x"
-CloseBtn.TextColor3             = Color3.fromRGB(180, 100, 140)
+CloseBtn.TextColor3             = White
 CloseBtn.Font                   = Enum.Font.GothamBold
 CloseBtn.TextSize               = 15
 CloseBtn.BorderSizePixel        = 0
@@ -296,38 +192,22 @@ Content.ZIndex               = 3
 Content.Parent               = Main
 
 -- ══════════════════════════════════════════
--- HELPERS
+-- TOGGLE HELPER
 -- ══════════════════════════════════════════
 local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
-
-local function makeSectionLabel(text, yPos)
-    local Lbl = Instance.new("TextLabel")
-    Lbl.Size                   = UDim2.new(1, 0, 0, 20)
-    Lbl.Position               = UDim2.new(0, 0, 0, yPos)
-    Lbl.BackgroundTransparency = 1
-    Lbl.Text                   = text
-    Lbl.TextColor3             = White
-    Lbl.Font                   = Enum.Font.GothamBold
-    Lbl.TextSize               = 11
-    Lbl.TextXAlignment         = Enum.TextXAlignment.Left
-    Lbl.ZIndex                 = 4
-    Lbl.Parent                 = Content
-    local S = Instance.new("UIStroke")
-    S.Color = Color3.fromRGB(160,130,180); S.Thickness = 1; S.Transparency = 0.5; S.Parent = Lbl
-end
 
 local function makeToggle(labelText, yPos)
     local Row = Instance.new("Frame")
     Row.Size                   = UDim2.new(1, 0, 0, 48)
     Row.Position               = UDim2.new(0, 0, 0, yPos)
-    Row.BackgroundColor3       = White
-    Row.BackgroundTransparency = 0.45
+    Row.BackgroundColor3       = DeepPlum
+    Row.BackgroundTransparency = 0.4
     Row.BorderSizePixel        = 0
     Row.ZIndex                 = 4
     Row.Parent                 = Content
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 10)
     local Stroke = Instance.new("UIStroke")
-    Stroke.Color = White; Stroke.Transparency = 0.5; Stroke.Thickness = 1; Stroke.Parent = Row
+    Stroke.Color = HotPink; Stroke.Transparency = 0.5; Stroke.Thickness = 1; Stroke.Parent = Row
 
     local Lbl = Instance.new("TextLabel")
     Lbl.Size                   = UDim2.new(1, -80, 1, 0)
@@ -344,18 +224,21 @@ local function makeToggle(labelText, yPos)
     local BtnTrack = Instance.new("TextButton")
     BtnTrack.Size                   = UDim2.new(0, 46, 0, 24)
     BtnTrack.Position               = UDim2.new(1, -58, 0.5, -12)
-    BtnTrack.BackgroundColor3       = White
-    BtnTrack.BackgroundTransparency = 0.5
+    BtnTrack.BackgroundColor3       = DeepPlum
+    BtnTrack.BackgroundTransparency = 0.2
     BtnTrack.Text                   = ""
     BtnTrack.BorderSizePixel        = 0
     BtnTrack.ZIndex                 = 5
     BtnTrack.Parent                 = Row
     Instance.new("UICorner", BtnTrack).CornerRadius = UDim.new(1, 0)
+    local BtnStroke = Instance.new("UIStroke")
+    BtnStroke.Color = HotPink; BtnStroke.Transparency = 0.4; BtnStroke.Thickness = 1
+    BtnStroke.Parent = BtnTrack
 
     local Knob = Instance.new("Frame")
     Knob.Size             = UDim2.new(0, 18, 0, 18)
     Knob.Position         = UDim2.new(0, 3, 0.5, -9)
-    Knob.BackgroundColor3 = Color3.fromRGB(200, 170, 210)
+    Knob.BackgroundColor3 = KnobOff
     Knob.BorderSizePixel  = 0
     Knob.ZIndex           = 6
     Knob.Parent           = BtnTrack
@@ -365,220 +248,34 @@ local function makeToggle(labelText, yPos)
 end
 
 -- ══════════════════════════════════════════
--- SECCION: STEAL
+-- SECCION MISC
 -- ══════════════════════════════════════════
-makeSectionLabel("— STEAL —", 0)
-
-local B_steal, K_steal = makeToggle("Auto Steal", 24)
-
--- Barra de progreso en el hub
-local SBRow = Instance.new("Frame")
-SBRow.Size                   = UDim2.new(1, 0, 0, 44)
-SBRow.Position               = UDim2.new(0, 0, 0, 80)
-SBRow.BackgroundColor3       = White
-SBRow.BackgroundTransparency = 0.55
-SBRow.BorderSizePixel        = 0
-SBRow.ZIndex                 = 4
-SBRow.Parent                 = Content
-Instance.new("UICorner", SBRow).CornerRadius = UDim.new(0, 10)
-local SBStroke = Instance.new("UIStroke")
-SBStroke.Color = White; SBStroke.Transparency = 0.5; SBStroke.Thickness = 1; SBStroke.Parent = SBRow
-
-SBStatus = Instance.new("TextLabel")
-SBStatus.Size                   = UDim2.new(0.5, 0, 0, 18)
-SBStatus.Position               = UDim2.new(0, 14, 0, 4)
-SBStatus.BackgroundTransparency = 1
-SBStatus.Text                   = "READY"
-SBStatus.TextColor3             = White
-SBStatus.Font                   = Enum.Font.GothamBold
-SBStatus.TextSize               = 11
-SBStatus.TextXAlignment         = Enum.TextXAlignment.Left
-SBStatus.ZIndex                 = 5
-SBStatus.Parent                 = SBRow
-
-SBPct = Instance.new("TextLabel")
-SBPct.Size                   = UDim2.new(0.5, -14, 0, 18)
-SBPct.Position               = UDim2.new(0.5, 0, 0, 4)
-SBPct.BackgroundTransparency = 1
-SBPct.Text                   = "0%"
-SBPct.TextColor3             = White
-SBPct.Font                   = Enum.Font.GothamBold
-SBPct.TextSize               = 11
-SBPct.TextXAlignment         = Enum.TextXAlignment.Right
-SBPct.Visible                = false
-SBPct.ZIndex                 = 5
-SBPct.Parent                 = SBRow
-
-local SBTrack = Instance.new("Frame")
-SBTrack.Size                   = UDim2.new(1, -28, 0, 12)
-SBTrack.Position               = UDim2.new(0, 14, 0, 26)
-SBTrack.BackgroundColor3       = White
-SBTrack.BackgroundTransparency = 0.7
-SBTrack.BorderSizePixel        = 0
-SBTrack.ZIndex                 = 5
-SBTrack.Parent                 = SBRow
-Instance.new("UICorner", SBTrack).CornerRadius = UDim.new(1, 0)
-
-SBFill = Instance.new("Frame")
-SBFill.Size             = UDim2.new(0, 0, 1, 0)
-SBFill.BackgroundColor3 = SkyBlue
-SBFill.BorderSizePixel  = 0
-SBFill.ZIndex           = 6
-SBFill.Parent           = SBTrack
-Instance.new("UICorner", SBFill).CornerRadius = UDim.new(1, 0)
-local FillGrad = Instance.new("UIGradient")
-FillGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Pink),
-    ColorSequenceKeypoint.new(1, SkyBlue),
-})
-FillGrad.Parent = SBFill
-
-local phantomFrame = Instance.new("Frame")
-phantomFrame.Size                   = UDim2.new(0, 140, 0, 18)
-phantomFrame.Position               = UDim2.new(0.5, -70, 0, 4)
-phantomFrame.BackgroundTransparency = 1
-phantomFrame.ZIndex                 = 6
-phantomFrame.Parent                 = SBRow
-
-for i = 1, 7 do
-    local lbl = Instance.new("TextLabel")
-    lbl.Size                   = UDim2.new(0, 18, 1, 0)
-    lbl.Position               = UDim2.new(0, (i-1)*20, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text                   = "█"
-    lbl.TextColor3             = White
-    lbl.Font                   = Enum.Font.GothamBold
-    lbl.TextSize               = 12
-    lbl.TextTransparency       = 1
-    lbl.ZIndex                 = 7
-    lbl.Parent                 = phantomFrame
-    table.insert(phantomLetterLabels, lbl)
-end
+local MiscLabel = Instance.new("TextLabel")
+MiscLabel.Size                   = UDim2.new(1, 0, 0, 20)
+MiscLabel.Position               = UDim2.new(0, 0, 0, 0)
+MiscLabel.BackgroundTransparency = 1
+MiscLabel.Text                   = "— MISC —"
+MiscLabel.TextColor3             = HotPink
+MiscLabel.Font                   = Enum.Font.GothamBold
+MiscLabel.TextSize               = 11
+MiscLabel.TextXAlignment         = Enum.TextXAlignment.Left
+MiscLabel.ZIndex                 = 4
+MiscLabel.Parent                 = Content
 
 -- ══════════════════════════════════════════
--- STEAL LOGIC
+-- DARK MODE TOGGLE
 -- ══════════════════════════════════════════
-local progressConnection = nil
-
-local function ResetProgressBar()
-    for _, lbl in ipairs(phantomLetterLabels) do lbl.TextTransparency = 1 end
-    if SBPct  then SBPct.Visible = false end
-    if SBFill then TweenService:Create(SBFill, TweenInfo.new(0.15), {Size = UDim2.new(0,0,1,0)}):Play() end
-    if SBStatus then SBStatus.Text = "READY" end
-    hideBillboard()
-end
-
-local function UpdatePhantomLetters(prog)
-    local numLetters = 7
-    local lettersToShow = math.clamp(math.floor(prog * numLetters + 0.999), 0, numLetters)
-    for i, lbl in ipairs(phantomLetterLabels) do
-        lbl.TextTransparency = i <= lettersToShow and 0 or 1
-    end
-    if SBPct then SBPct.Visible = true; SBPct.Text = math.floor(prog*100).."%" end
-    if SBFill then SBFill.Size = UDim2.new(prog, 0, 1, 0) end
-    if SBStatus then SBStatus.Text = isStealing and "STEALING..." or "READY" end
-    -- Actualizar billboard encima del personaje
-    showBillboardPct(math.floor(prog * 100))
-end
-
-local function cachePromptData(prompt)
-    if StealData[prompt] then return StealData[prompt] end
-    local data = {hold={}, trigger={}, ready=true}
-    pcall(function()
-        if getconnections then
-            for _, c in ipairs(getconnections(prompt.PromptButtonHoldBegan)) do
-                if c.Function then table.insert(data.hold, c.Function) end
-            end
-            for _, c in ipairs(getconnections(prompt.Triggered)) do
-                if c.Function then table.insert(data.trigger, c.Function) end
-            end
-        end
-    end)
-    StealData[prompt] = data
-    return data
-end
-
-local function executeSteal(prompt, name)
-    if isStealing then return end
-    local data = cachePromptData(prompt)
-    if not data.ready then return end
-    data.ready = false; isStealing = true; stealStartTime = tick()
-    if progressConnection then progressConnection:Disconnect() end
-    progressConnection = RunService.Heartbeat:Connect(function()
-        if not isStealing then
-            if progressConnection then progressConnection:Disconnect(); progressConnection = nil end
-            return
-        end
-        local prog = math.clamp((tick() - stealStartTime) / Values.STEAL_DURATION, 0, 1)
-        UpdatePhantomLetters(prog)
-    end)
-    task.spawn(function()
-        for _, f in ipairs(data.hold) do task.spawn(pcall, f) end
-        task.wait(Values.STEAL_DURATION)
-        for _, f in ipairs(data.trigger) do task.spawn(pcall, f) end
-        if progressConnection then progressConnection:Disconnect(); progressConnection = nil end
-        ResetProgressBar()
-        data.ready = true; isStealing = false
-    end)
-end
-
-local lastStealScan = 0
-
-local function startAutoSteal()
-    if Connections.autoSteal then return end
-    Connections.autoSteal = RunService.Heartbeat:Connect(function()
-        if not Enabled.AutoSteal or isStealing then return end
-        local now = tick()
-        if now - lastStealScan < 0.05 then return end
-        lastStealScan = now
-        local p, _, n = findNearestPrompt()
-        if p then executeSteal(p, n) end
-    end)
-end
-
-local function stopAutoSteal()
-    if Connections.autoSteal then Connections.autoSteal:Disconnect(); Connections.autoSteal = nil end
-    isStealing = false
-    if progressConnection then progressConnection:Disconnect(); progressConnection = nil end
-    ResetProgressBar()
-end
-
--- Estado inicial del toggle
-if autoStealOn then
-    Enabled.AutoSteal = true
-    K_steal.Position         = UDim2.new(1,-21,0.5,-9)
-    K_steal.BackgroundColor3 = SkyBlue
-    startAutoSteal()
-end
-
-B_steal.MouseButton1Click:Connect(function()
-    autoStealOn = not autoStealOn
-    Enabled.AutoSteal = autoStealOn
-    if autoStealOn then
-        startAutoSteal()
-        TweenService:Create(K_steal, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=SkyBlue}):Play()
-    else
-        stopAutoSteal()
-        TweenService:Create(K_steal, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=Color3.fromRGB(200,170,210)}):Play()
-    end
-end)
-
--- ══════════════════════════════════════════
--- SECCION: MISC
--- ══════════════════════════════════════════
-makeSectionLabel("— MISC —", 136)
-
-local B1, K1 = makeToggle("Dark Mode", 160)
+local B1, K1 = makeToggle("Dark Mode", 24)
 
 local function applyDarkState()
     if darkOn then
         enableOptimizer(); enableDarkMode()
         K1.Position         = UDim2.new(1, -21, 0.5, -9)
-        K1.BackgroundColor3 = SkyBlue
+        K1.BackgroundColor3 = KnobOn
     else
         disableOptimizer(); disableDarkMode()
         K1.Position         = UDim2.new(0, 3, 0.5, -9)
-        K1.BackgroundColor3 = Color3.fromRGB(200, 170, 210)
+        K1.BackgroundColor3 = KnobOff
     end
 end
 
@@ -588,10 +285,10 @@ B1.MouseButton1Click:Connect(function()
     darkOn = not darkOn
     if darkOn then
         enableOptimizer(); enableDarkMode()
-        TweenService:Create(K1, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=SkyBlue}):Play()
+        TweenService:Create(K1, ti, {Position = UDim2.new(1, -21, 0.5, -9), BackgroundColor3 = KnobOn}):Play()
     else
         disableOptimizer(); disableDarkMode()
-        TweenService:Create(K1, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=Color3.fromRGB(200,170,210)}):Play()
+        TweenService:Create(K1, ti, {Position = UDim2.new(0, 3, 0.5, -9), BackgroundColor3 = KnobOff}):Play()
     end
 end)
 
@@ -601,8 +298,8 @@ end)
 local SaveBtn = Instance.new("TextButton")
 SaveBtn.Size                   = UDim2.new(1, -24, 0, 36)
 SaveBtn.Position               = UDim2.new(0, 12, 1, -48)
-SaveBtn.BackgroundColor3       = White
-SaveBtn.BackgroundTransparency = 0.35
+SaveBtn.BackgroundColor3       = HotPink
+SaveBtn.BackgroundTransparency = 0.2
 SaveBtn.Text                   = "💾  Save Config"
 SaveBtn.TextColor3             = White
 SaveBtn.Font                   = Enum.Font.GothamBold
@@ -612,14 +309,14 @@ SaveBtn.ZIndex                 = 6
 SaveBtn.Parent                 = Main
 Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 10)
 local SaveStroke = Instance.new("UIStroke")
-SaveStroke.Color = White; SaveStroke.Transparency = 0.45; SaveStroke.Thickness = 1
+SaveStroke.Color = White; SaveStroke.Transparency = 0.6; SaveStroke.Thickness = 1
 SaveStroke.Parent = SaveBtn
 
 SaveBtn.MouseButton1Click:Connect(function()
     saveConfig()
     local orig = SaveBtn.Text
     SaveBtn.Text = "✔  Saved!"
-    SaveBtn.TextColor3 = GreenOk
+    SaveBtn.TextColor3 = Color3.fromRGB(150, 240, 180)
     task.delay(1.2, function()
         SaveBtn.Text = orig
         SaveBtn.TextColor3 = White
@@ -630,8 +327,6 @@ end)
 -- CERRAR
 -- ══════════════════════════════════════════
 CloseBtn.MouseButton1Click:Connect(function()
-    stopAutoSteal()
-    hideBillboard()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size     = UDim2.new(0, 0, 0, 0),
         Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -662,12 +357,9 @@ end)
 -- ══════════════════════════════════════════
 -- ANIMACION ENTRADA
 -- ══════════════════════════════════════════
-task.wait(0.1)
-createBillboard()
-
 Main.Size = UDim2.new(0, 0, 0, 0)
 Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size     = UDim2.new(0, GUI_W, 0, GUI_H),
-    Position = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2),
+    Size     = UDim2.new(0, 500, 0, 300),
+    Position = UDim2.new(0.5, -250, 0.5, -150),
 }):Play()
