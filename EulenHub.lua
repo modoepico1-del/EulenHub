@@ -1,4 +1,4 @@
--- KMONEY HUB - 500x300 (scrollable)
+-- KMONEY HUB - 300x300
 
 local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
@@ -285,9 +285,33 @@ if PlayerGui:FindFirstChild("KmoneyHub") then
 end
 
 -- ══════════════════════════════════════════
--- GUI  (500 x 300)
+-- LAYOUT (todo visible, sin scroll, 300×300)
+--
+--  Header   : 40px
+--  Sep line : 1px
+--  PAD_TOP  : 3px
+--  Sec label: 14px    → y=44
+--  6 rows   : 6×30    → 180px
+--  5 gaps   : 5×3     → 15px
+--  PAD_MID  : 3px
+--  Save btn : 26px
+--  PAD_BOT  : 4px
+--  ─────────────────
+--  Total    : 40+1+3+14+180+15+3+26+4 = 286px  (dentro de 300) ✓
 -- ══════════════════════════════════════════
-local GUI_W, GUI_H = 500, 300
+local GUI_W   = 300
+local GUI_H   = 300
+local ROW_H   = 30
+local ROW_GAP = 3
+local SEC_H   = 14
+local HEADER_H = 40
+local PAD_TOP  = 3
+local PAD_MID  = 3
+local SAVE_H   = 26
+local PAD_BOT  = 4
+
+-- y absoluta donde empieza el contenido dentro de Main
+local CONTENT_Y = HEADER_H + 1 + PAD_TOP  -- 44
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KmoneyHub"
@@ -303,7 +327,7 @@ Main.BackgroundColor3 = NavyDark
 Main.BorderSizePixel  = 0
 Main.ClipsDescendants = true
 Main.Parent           = ScreenGui
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
 
 local BgGrad = Instance.new("UIGradient")
 BgGrad.Color = ColorSequence.new({
@@ -313,18 +337,18 @@ BgGrad.Color = ColorSequence.new({
 BgGrad.Rotation = 135
 BgGrad.Parent = Main
 
--- Header
+-- ── Header ──
 local Header = Instance.new("Frame")
-Header.Size                   = UDim2.new(1, 0, 0, 52)
+Header.Size                   = UDim2.new(1, 0, 0, HEADER_H)
 Header.BackgroundColor3       = IndigoDark
 Header.BackgroundTransparency = 0.2
 Header.BorderSizePixel        = 0
 Header.ZIndex                 = 3
 Header.Parent                 = Main
-Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 12)
 
 local HeaderLine = Instance.new("Frame")
-HeaderLine.Size                   = UDim2.new(1, 0, 0, 1.5)
+HeaderLine.Size                   = UDim2.new(1, 0, 0, 1)
 HeaderLine.Position               = UDim2.new(0, 0, 1, -1)
 HeaderLine.BackgroundColor3       = IndigoMid
 HeaderLine.BackgroundTransparency = 0.2
@@ -333,106 +357,73 @@ HeaderLine.ZIndex                 = 4
 HeaderLine.Parent                 = Header
 
 local Title = Instance.new("TextLabel")
-Title.Size                   = UDim2.new(1, -60, 1, 0)
-Title.Position               = UDim2.new(0, 18, 0, 0)
+Title.Size                   = UDim2.new(1, -50, 1, 0)
+Title.Position               = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text                   = "Kmoney"
 Title.TextColor3             = White
 Title.Font                   = Enum.Font.GothamBlack
-Title.TextSize               = 20
+Title.TextSize               = 16
 Title.TextXAlignment         = Enum.TextXAlignment.Left
 Title.ZIndex                 = 5
 Title.Parent                 = Header
 local TitleStroke = Instance.new("UIStroke")
-TitleStroke.Color = IndigoMid; TitleStroke.Thickness = 1.5; TitleStroke.Transparency = 0.4
+TitleStroke.Color = IndigoMid; TitleStroke.Thickness = 1.2; TitleStroke.Transparency = 0.4
 TitleStroke.Parent = Title
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size                   = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position               = UDim2.new(1, -42, 0.5, -15)
+CloseBtn.Size                   = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position               = UDim2.new(1, -32, 0.5, -12)
 CloseBtn.BackgroundColor3       = IndigoMid
 CloseBtn.BackgroundTransparency = 0.3
 CloseBtn.Text                   = "x"
 CloseBtn.TextColor3             = White
 CloseBtn.Font                   = Enum.Font.GothamBold
-CloseBtn.TextSize               = 15
+CloseBtn.TextSize               = 12
 CloseBtn.BorderSizePixel        = 0
 CloseBtn.ZIndex                 = 6
 CloseBtn.Parent                 = Header
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
--- ══════════════════════════════════════════
--- SCROLL FRAME (contenido desplazable)
--- ══════════════════════════════════════════
--- Altura del area de scroll: GUI_H - header(52) - saveBtn(46) - margenes
-local SCROLL_TOP    = 60
-local SCROLL_BOTTOM = 50  -- espacio para el boton Save
-local SCROLL_H      = GUI_H - SCROLL_TOP - SCROLL_BOTTOM  -- 300-60-50 = 190
+-- ── Content (frame plano, sin scroll) ──
+local Content = Instance.new("Frame")
+Content.Size                   = UDim2.new(1, -16, 0, SEC_H + 6*(ROW_H+ROW_GAP))
+Content.Position               = UDim2.new(0, 8, 0, CONTENT_Y)
+Content.BackgroundTransparency = 1
+Content.ZIndex                 = 3
+Content.Parent                 = Main
 
--- Cantidad de filas: 6 toggles x 56px + label 24px + padding = ~364px total
-local CONTENT_ROWS  = 6
-local ROW_H         = 48
-local ROW_GAP       = 8
-local SECTION_H     = 24
-local TOTAL_CONTENT = SECTION_H + CONTENT_ROWS * (ROW_H + ROW_GAP) + 10  -- ~370px
-
-local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Name                  = "ScrollFrame"
-ScrollFrame.Size                  = UDim2.new(1, -12, 0, SCROLL_H)
-ScrollFrame.Position              = UDim2.new(0, 6, 0, SCROLL_TOP)
-ScrollFrame.BackgroundTransparency = 1
-ScrollFrame.BorderSizePixel       = 0
-ScrollFrame.ScrollBarThickness    = 4
-ScrollFrame.ScrollBarImageColor3  = IndigoMid
-ScrollFrame.CanvasSize            = UDim2.new(0, 0, 0, TOTAL_CONTENT)
-ScrollFrame.ScrollingDirection    = Enum.ScrollingDirection.Y
-ScrollFrame.ElasticBehavior       = Enum.ElasticBehavior.WhenScrollable
-ScrollFrame.ZIndex                = 3
-ScrollFrame.Parent                = Main
-
--- Padding interno del scroll
-local UIPadding = Instance.new("UIPadding")
-UIPadding.PaddingLeft   = UDim.new(0, 6)
-UIPadding.PaddingRight  = UDim.new(0, 6)
-UIPadding.PaddingTop    = UDim.new(0, 4)
-UIPadding.Parent        = ScrollFrame
-
--- Usamos Content como referencia al ScrollFrame para los toggles
-local Content = ScrollFrame
-
--- ══════════════════════════════════════════
--- TOGGLE HELPER
--- ══════════════════════════════════════════
+-- ── Toggle helper compacto ──
 local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
 
 local function makeToggle(labelText, yPos)
     local Row = Instance.new("Frame")
-    Row.Size                   = UDim2.new(1, -12, 0, ROW_H)
+    Row.Size                   = UDim2.new(1, 0, 0, ROW_H)
     Row.Position               = UDim2.new(0, 0, 0, yPos)
     Row.BackgroundColor3       = IndigoDark
     Row.BackgroundTransparency = 0.3
     Row.BorderSizePixel        = 0
     Row.ZIndex                 = 4
     Row.Parent                 = Content
-    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 8)
     local Stroke = Instance.new("UIStroke")
-    Stroke.Color = IndigoMid; Stroke.Transparency = 0.4; Stroke.Thickness = 1; Stroke.Parent = Row
+    Stroke.Color = IndigoMid; Stroke.Transparency = 0.5; Stroke.Thickness = 1; Stroke.Parent = Row
 
     local Lbl = Instance.new("TextLabel")
-    Lbl.Size                   = UDim2.new(1, -80, 1, 0)
-    Lbl.Position               = UDim2.new(0, 14, 0, 0)
+    Lbl.Size                   = UDim2.new(1, -62, 1, 0)
+    Lbl.Position               = UDim2.new(0, 10, 0, 0)
     Lbl.BackgroundTransparency = 1
     Lbl.Text                   = labelText
     Lbl.TextColor3             = White
     Lbl.Font                   = Enum.Font.GothamBold
-    Lbl.TextSize               = 14
+    Lbl.TextSize               = 12
     Lbl.TextXAlignment         = Enum.TextXAlignment.Left
     Lbl.ZIndex                 = 5
     Lbl.Parent                 = Row
 
     local BtnTrack = Instance.new("TextButton")
-    BtnTrack.Size                   = UDim2.new(0, 46, 0, 24)
-    BtnTrack.Position               = UDim2.new(1, -58, 0.5, -12)
+    BtnTrack.Size                   = UDim2.new(0, 38, 0, 20)
+    BtnTrack.Position               = UDim2.new(1, -44, 0.5, -10)
     BtnTrack.BackgroundColor3       = NavyDark
     BtnTrack.BackgroundTransparency = 0.1
     BtnTrack.Text                   = ""
@@ -445,8 +436,8 @@ local function makeToggle(labelText, yPos)
     BtnStroke.Parent = BtnTrack
 
     local Knob = Instance.new("Frame")
-    Knob.Size             = UDim2.new(0, 18, 0, 18)
-    Knob.Position         = UDim2.new(0, 3, 0.5, -9)
+    Knob.Size             = UDim2.new(0, 14, 0, 14)
+    Knob.Position         = UDim2.new(0, 3, 0.5, -7)
     Knob.BackgroundColor3 = KnobOff
     Knob.BorderSizePixel  = 0
     Knob.ZIndex           = 6
@@ -456,27 +447,22 @@ local function makeToggle(labelText, yPos)
     return BtnTrack, Knob
 end
 
--- ══════════════════════════════════════════
--- SECCION MISC
--- ══════════════════════════════════════════
+-- ── Section label ──
 local MiscLabel = Instance.new("TextLabel")
-MiscLabel.Size                   = UDim2.new(1, -12, 0, SECTION_H)
+MiscLabel.Size                   = UDim2.new(1, 0, 0, SEC_H)
 MiscLabel.Position               = UDim2.new(0, 0, 0, 0)
 MiscLabel.BackgroundTransparency = 1
 MiscLabel.Text                   = "— MISC —"
 MiscLabel.TextColor3             = IndigoMid
 MiscLabel.Font                   = Enum.Font.GothamBold
-MiscLabel.TextSize               = 11
+MiscLabel.TextSize               = 10
 MiscLabel.TextXAlignment         = Enum.TextXAlignment.Left
 MiscLabel.ZIndex                 = 4
 MiscLabel.Parent                 = Content
 
--- yPos helper: SECTION_H + index * (ROW_H + ROW_GAP)
-local function rowY(i) return SECTION_H + (i-1) * (ROW_H + ROW_GAP) end
+local function rowY(i) return SEC_H + (i-1)*(ROW_H + ROW_GAP) end
 
--- ══════════════════════════════════════════
--- TOGGLES
--- ══════════════════════════════════════════
+-- ── Crea los 6 toggles ──
 local B1, K1 = makeToggle("Dark Mode",    rowY(1))
 local B2, K2 = makeToggle("Galaxy",       rowY(2))
 local B3, K3 = makeToggle("Anti Ragdoll", rowY(3))
@@ -490,22 +476,21 @@ local B6, K6 = makeToggle("Unwalk",       rowY(6))
 local function applyDarkState()
     if darkOn then
         enableOptimizer(); enableDarkMode()
-        K1.Position = UDim2.new(1,-21,0.5,-9); K1.BackgroundColor3 = KnobOn
+        K1.Position = UDim2.new(1,-17,0.5,-7); K1.BackgroundColor3 = KnobOn
     else
         disableOptimizer(); disableDarkMode()
-        K1.Position = UDim2.new(0,3,0.5,-9);   K1.BackgroundColor3 = KnobOff
+        K1.Position = UDim2.new(0,3,0.5,-7);   K1.BackgroundColor3 = KnobOff
     end
 end
 applyDarkState()
-
 B1.MouseButton1Click:Connect(function()
     darkOn = not darkOn
     if darkOn then
         enableOptimizer(); enableDarkMode()
-        TweenService:Create(K1, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
+        TweenService:Create(K1, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
     else
         disableOptimizer(); disableDarkMode()
-        TweenService:Create(K1, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+        TweenService:Create(K1, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
     end
 end)
 
@@ -515,23 +500,22 @@ end)
 local function applyGalaxyState()
     if galaxyOn then
         config.GalaxySkyBright = true; enableGalaxySkyBright()
-        K2.Position = UDim2.new(1,-21,0.5,-9); K2.BackgroundColor3 = KnobOn
+        K2.Position = UDim2.new(1,-17,0.5,-7); K2.BackgroundColor3 = KnobOn
     else
         config.GalaxySkyBright = false; disableGalaxySkyBright()
-        K2.Position = UDim2.new(0,3,0.5,-9);   K2.BackgroundColor3 = KnobOff
+        K2.Position = UDim2.new(0,3,0.5,-7);   K2.BackgroundColor3 = KnobOff
     end
 end
 applyGalaxyState()
-
 B2.MouseButton1Click:Connect(function()
     galaxyOn = not galaxyOn
     config.GalaxySkyBright = galaxyOn
     if galaxyOn then
         enableGalaxySkyBright()
-        TweenService:Create(K2, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
+        TweenService:Create(K2, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
     else
         disableGalaxySkyBright()
-        TweenService:Create(K2, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+        TweenService:Create(K2, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
     end
 end)
 
@@ -541,24 +525,22 @@ end)
 local function applyAntiRagdollState()
     if antiRagdollOn then
         toggleAntiRagdoll(true)
-        K3.Position = UDim2.new(1,-21,0.5,-9); K3.BackgroundColor3 = KnobOn
+        K3.Position = UDim2.new(1,-17,0.5,-7); K3.BackgroundColor3 = KnobOn
     else
         toggleAntiRagdoll(false)
-        K3.Position = UDim2.new(0,3,0.5,-9);   K3.BackgroundColor3 = KnobOff
+        K3.Position = UDim2.new(0,3,0.5,-7);   K3.BackgroundColor3 = KnobOff
     end
 end
-
 antiRagdollOn = antiRagdollSaved
 applyAntiRagdollState()
-
 B3.MouseButton1Click:Connect(function()
     antiRagdollOn = not antiRagdollOn
     if antiRagdollOn then
         toggleAntiRagdoll(true)
-        TweenService:Create(K3, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
+        TweenService:Create(K3, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
     else
         toggleAntiRagdoll(false)
-        TweenService:Create(K3, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+        TweenService:Create(K3, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
     end
 end)
 
@@ -576,7 +558,6 @@ RunService.Heartbeat:Connect(function()
         hrp.Velocity = Vector3.new(hrp.Velocity.X, -clampFallSpeed, hrp.Velocity.Z)
     end
 end)
-
 UserInputService.JumpRequest:Connect(function()
     if not infJumpOn then return end
     local char = me.Character; if not char then return end
@@ -586,38 +567,36 @@ end)
 
 local function applyInfJumpState()
     if infJumpOn then
-        K4.Position = UDim2.new(1,-21,0.5,-9); K4.BackgroundColor3 = KnobOn
+        K4.Position = UDim2.new(1,-17,0.5,-7); K4.BackgroundColor3 = KnobOn
     else
-        K4.Position = UDim2.new(0,3,0.5,-9);   K4.BackgroundColor3 = KnobOff
+        K4.Position = UDim2.new(0,3,0.5,-7);   K4.BackgroundColor3 = KnobOff
     end
 end
-
 infJumpOn = infJumpSaved
 applyInfJumpState()
-
 B4.MouseButton1Click:Connect(function()
     infJumpOn = not infJumpOn
     if infJumpOn then
-        TweenService:Create(K4, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
+        TweenService:Create(K4, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
     else
-        TweenService:Create(K4, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+        TweenService:Create(K4, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
     end
 end)
 
 -- ══════════════════════════════════════════
--- AUTO STEAL - Barra de progreso
+-- AUTO STEAL — barra de progreso (encima de Save)
 -- ══════════════════════════════════════════
 local progressBarBg = Instance.new("Frame")
-progressBarBg.Size                   = UDim2.new(1, -24, 0, 6)
-progressBarBg.Position               = UDim2.new(0, 12, 0, SCROLL_TOP + SCROLL_H + 6)
+progressBarBg.Size                   = UDim2.new(1, -16, 0, 5)
+progressBarBg.Position               = UDim2.new(0, 8, 1, -(SAVE_H + PAD_BOT + 8))
 progressBarBg.BackgroundColor3       = NavyDark
 progressBarBg.BackgroundTransparency = 0.15
 progressBarBg.Visible                = false
 progressBarBg.ZIndex                 = 10
 progressBarBg.Parent                 = Main
-Instance.new("UICorner", progressBarBg).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", progressBarBg).CornerRadius = UDim.new(0, 4)
 local pbStroke = Instance.new("UIStroke", progressBarBg)
-pbStroke.Color = IndigoMid; pbStroke.Thickness = 1; pbStroke.Transparency = 0.3
+pbStroke.Color = IndigoMid; pbStroke.Thickness = 1; pbStroke.Transparency = 0.4
 
 local progressFill = Instance.new("Frame")
 progressFill.Size             = UDim2.new(0, 0, 1, 0)
@@ -625,13 +604,13 @@ progressFill.BackgroundColor3 = KnobOn
 progressFill.BorderSizePixel  = 0
 progressFill.ZIndex           = 11
 progressFill.Parent           = progressBarBg
-Instance.new("UICorner", progressFill).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", progressFill).CornerRadius = UDim.new(0, 4)
 
 local percentLabel = Instance.new("TextLabel")
 percentLabel.Size                   = UDim2.new(1, 0, 1, 0)
 percentLabel.BackgroundTransparency = 1
 percentLabel.Font                   = Enum.Font.GothamBold
-percentLabel.TextSize               = 7
+percentLabel.TextSize               = 6
 percentLabel.TextColor3             = White
 percentLabel.Text                   = "0%"
 percentLabel.ZIndex                 = 12
@@ -639,26 +618,22 @@ percentLabel.Parent                 = progressBarBg
 
 local function animateProgressBar()
     task.spawn(function()
-        progressFill.Size = UDim2.new(0, 0, 1, 0)
-        percentLabel.Text = "0%"
+        progressFill.Size = UDim2.new(0, 0, 1, 0); percentLabel.Text = "0%"
         for i = 1, 10 do
-            local pct = i / 10
+            local pct = i/10
             progressFill.Size = UDim2.new(pct, 0, 1, 0)
-            percentLabel.Text = math.floor(pct * 100) .. "%"
+            percentLabel.Text = math.floor(pct*100).."%"
             task.wait(0.015)
         end
         task.wait(0.2)
-        progressFill.Size = UDim2.new(0, 0, 1, 0)
-        percentLabel.Text = "0%"
+        progressFill.Size = UDim2.new(0,0,1,0); percentLabel.Text = "0%"
     end)
 end
 
 -- ══════════════════════════════════════════
 -- CIRCULO BLANCO
 -- ══════════════════════════════════════════
-local stealCirclePart = nil
-local stealCircleSel  = nil
-local stealCircleConn = nil
+local stealCirclePart, stealCircleSel, stealCircleConn = nil, nil, nil
 
 local function hideStealCircle()
     if stealCircleSel  then stealCircleSel:Destroy();  stealCircleSel  = nil end
@@ -667,36 +642,22 @@ local function hideStealCircle()
 end
 
 local function showStealCircle(radius)
-    if stealCirclePart then
-        stealCirclePart.Size = Vector3.new(0.05, radius*2, radius*2)
-        return
-    end
-    stealCirclePart              = Instance.new("Part")
-    stealCirclePart.Name         = "KmoneyStealCircle"
-    stealCirclePart.Anchored     = true
-    stealCirclePart.CanCollide   = false
-    stealCirclePart.Transparency = 1
-    stealCirclePart.Material     = Enum.Material.Plastic
-    stealCirclePart.Shape        = Enum.PartType.Cylinder
-    stealCirclePart.Size         = Vector3.new(0.05, radius*2, radius*2)
-    stealCirclePart.Parent       = workspace
-
-    stealCircleSel                    = Instance.new("SelectionBox")
-    stealCircleSel.Adornee            = stealCirclePart
-    stealCircleSel.Color3             = Color3.fromRGB(255, 255, 255)
-    stealCircleSel.LineThickness      = 0.05
-    stealCircleSel.SurfaceTransparency = 1
-    stealCircleSel.SurfaceColor3      = Color3.fromRGB(255, 255, 255)
-    stealCircleSel.Parent             = workspace
-
+    if stealCirclePart then stealCirclePart.Size = Vector3.new(0.05, radius*2, radius*2); return end
+    stealCirclePart = Instance.new("Part")
+    stealCirclePart.Name = "KmoneyStealCircle"; stealCirclePart.Anchored = true
+    stealCirclePart.CanCollide = false; stealCirclePart.Transparency = 1
+    stealCirclePart.Material = Enum.Material.Plastic; stealCirclePart.Shape = Enum.PartType.Cylinder
+    stealCirclePart.Size = Vector3.new(0.05, radius*2, radius*2); stealCirclePart.Parent = workspace
+    stealCircleSel = Instance.new("SelectionBox")
+    stealCircleSel.Adornee = stealCirclePart; stealCircleSel.Color3 = Color3.fromRGB(255,255,255)
+    stealCircleSel.LineThickness = 0.05; stealCircleSel.SurfaceTransparency = 1
+    stealCircleSel.SurfaceColor3 = Color3.fromRGB(255,255,255); stealCircleSel.Parent = workspace
     stealCircleConn = RunService.Heartbeat:Connect(function()
         if not autoStealActive then hideStealCircle(); return end
         if stealCirclePart and me.Character then
             local root = me.Character:FindFirstChild("HumanoidRootPart")
             if root then
-                stealCirclePart.CFrame =
-                    CFrame.new(root.Position + Vector3.new(0, -2.5, 0))
-                    * CFrame.Angles(0, 0, math.rad(90))
+                stealCirclePart.CFrame = CFrame.new(root.Position + Vector3.new(0,-2.5,0)) * CFrame.Angles(0,0,math.rad(90))
             end
         end
     end)
@@ -714,7 +675,7 @@ local autoStealScannerStarted  = false
 
 local animalsDataAS = {}
 pcall(function()
-    animalsDataAS = require(ReplicatedStorage:WaitForChild("Datas", 5):WaitForChild("Animals", 5))
+    animalsDataAS = require(ReplicatedStorage:WaitForChild("Datas",5):WaitForChild("Animals",5))
 end)
 
 local function autoSteal_getHRP()
@@ -724,23 +685,17 @@ end
 
 local function autoSteal_isMyBase(plotName)
     local plots = workspace:FindFirstChild("Plots")
-    local plot  = plots and plots:FindFirstChild(plotName)
-    if not plot then return false end
-    local sign = plot:FindFirstChild("PlotSign")
-    if sign then
-        local yourBase = sign:FindFirstChild("YourBase")
-        if yourBase and yourBase:IsA("BillboardGui") then
-            return yourBase.Enabled == true
-        end
-    end
+    local plot  = plots and plots:FindFirstChild(plotName); if not plot then return false end
+    local sign  = plot:FindFirstChild("PlotSign"); if not sign then return false end
+    local yb    = sign:FindFirstChild("YourBase")
+    if yb and yb:IsA("BillboardGui") then return yb.Enabled == true end
     return false
 end
 
 local function autoSteal_scanPlot(plot)
     if not plot or not plot:IsA("Model") then return end
     if autoSteal_isMyBase(plot.Name) then return end
-    local podiums = plot:FindFirstChild("AnimalPodiums")
-    if not podiums then return end
+    local podiums = plot:FindFirstChild("AnimalPodiums"); if not podiums then return end
     for _, podium in ipairs(podiums:GetChildren()) do
         if podium:IsA("Model") and podium:FindFirstChild("Base") then
             local animalName = "Unknown"
@@ -756,11 +711,8 @@ local function autoSteal_scanPlot(plot)
                 end
             end
             table.insert(autoStealAnimalsCache, {
-                name          = animalName,
-                plot          = plot.Name,
-                slot          = podium.Name,
-                worldPosition = podium:GetPivot().Position,
-                uid           = plot.Name .. "_" .. podium.Name,
+                name=animalName, plot=plot.Name, slot=podium.Name,
+                worldPosition=podium:GetPivot().Position, uid=plot.Name.."_"..podium.Name,
             })
         end
     end
@@ -771,20 +723,15 @@ local function autoSteal_initScanner()
     autoStealScannerStarted = true
     task.spawn(function()
         task.wait(2)
-        local plots = workspace:WaitForChild("Plots", 10)
-        if not plots then return end
-        for _, plot in ipairs(plots:GetChildren()) do
-            if plot:IsA("Model") then autoSteal_scanPlot(plot) end
-        end
+        local plots = workspace:WaitForChild("Plots", 10); if not plots then return end
+        for _, plot in ipairs(plots:GetChildren()) do if plot:IsA("Model") then autoSteal_scanPlot(plot) end end
         plots.ChildAdded:Connect(function(plot)
             if plot:IsA("Model") then task.wait(0.5); autoSteal_scanPlot(plot) end
         end)
         task.spawn(function()
             while task.wait(5) do
                 autoStealAnimalsCache = {}
-                for _, plot in ipairs(plots:GetChildren()) do
-                    if plot:IsA("Model") then autoSteal_scanPlot(plot) end
-                end
+                for _, plot in ipairs(plots:GetChildren()) do if plot:IsA("Model") then autoSteal_scanPlot(plot) end end
             end
         end)
     end)
@@ -794,18 +741,15 @@ local function autoSteal_findPrompt(animalData)
     if not animalData then return nil end
     local cached = autoStealPromptCache[animalData.uid]
     if cached and cached.Parent then return cached end
-    local plots   = workspace:FindFirstChild("Plots")
-    local plot    = plots and plots:FindFirstChild(animalData.plot);  if not plot    then return nil end
-    local podiums = plot:FindFirstChild("AnimalPodiums");             if not podiums then return nil end
-    local podium  = podiums:FindFirstChild(animalData.slot);          if not podium  then return nil end
-    local base    = podium:FindFirstChild("Base");                    if not base    then return nil end
-    local spawn   = base:FindFirstChild("Spawn");                     if not spawn   then return nil end
-    local attach  = spawn:FindFirstChild("PromptAttachment");         if not attach  then return nil end
+    local plots  = workspace:FindFirstChild("Plots")
+    local plot   = plots and plots:FindFirstChild(animalData.plot);  if not plot   then return nil end
+    local podiums= plot:FindFirstChild("AnimalPodiums");             if not podiums then return nil end
+    local podium = podiums:FindFirstChild(animalData.slot);          if not podium  then return nil end
+    local base   = podium:FindFirstChild("Base");                    if not base    then return nil end
+    local spawn  = base:FindFirstChild("Spawn");                     if not spawn   then return nil end
+    local attach = spawn:FindFirstChild("PromptAttachment");         if not attach  then return nil end
     for _, p in ipairs(attach:GetChildren()) do
-        if p:IsA("ProximityPrompt") then
-            autoStealPromptCache[animalData.uid] = p
-            return p
-        end
+        if p:IsA("ProximityPrompt") then autoStealPromptCache[animalData.uid]=p; return p end
     end
     return nil
 end
@@ -813,13 +757,11 @@ end
 local function autoSteal_execute(prompt)
     local data = autoStealInternalCache[prompt]
     if data and not data.ready then return false end
-    autoStealInternalCache[prompt] = { ready = false }
+    autoStealInternalCache[prompt] = { ready=false }
     autoStealIsStealing = true
     pcall(function() fireproximityprompt(prompt) end)
     task.delay(0.15, function()
-        if autoStealInternalCache[prompt] then
-            autoStealInternalCache[prompt].ready = true
-        end
+        if autoStealInternalCache[prompt] then autoStealInternalCache[prompt].ready = true end
         autoStealIsStealing = false
     end)
     return true
@@ -832,7 +774,7 @@ local function autoSteal_getNearest()
         if autoSteal_isMyBase(animalData.plot) then continue end
         if animalData.worldPosition then
             local dist = (hrp.Position - animalData.worldPosition).Magnitude
-            if dist < minDist then minDist = dist; nearest = animalData end
+            if dist < minDist then minDist=dist; nearest=animalData end
         end
     end
     return nearest
@@ -841,62 +783,48 @@ end
 local function startAutoStealLoop()
     if autoStealStealConnection then autoStealStealConnection:Disconnect() end
     autoStealStealConnection = RunService.Heartbeat:Connect(function()
-        if not autoStealActive then return end
-        if autoStealIsStealing then return end
+        if not autoStealActive or autoStealIsStealing then return end
         local target = autoSteal_getNearest()
         if not target or not target.worldPosition then return end
         local hrp = autoSteal_getHRP(); if not hrp then return end
         if (hrp.Position - target.worldPosition).Magnitude > AUTO_STEAL_PROX_RADIUS then return end
         local prompt = autoStealPromptCache[target.uid]
         if not prompt or not prompt.Parent then prompt = autoSteal_findPrompt(target) end
-        if prompt then
-            if autoSteal_execute(prompt) then task.spawn(animateProgressBar) end
-        end
+        if prompt then if autoSteal_execute(prompt) then task.spawn(animateProgressBar) end end
     end)
 end
 
 local function stopAutoStealLoop()
-    if autoStealStealConnection then autoStealStealConnection:Disconnect(); autoStealStealConnection = nil end
+    if autoStealStealConnection then autoStealStealConnection:Disconnect(); autoStealStealConnection=nil end
     autoStealIsStealing = false
 end
 
 local function enableAutoSteal()
-    autoStealActive = true
-    autoSteal_initScanner()
-    startAutoStealLoop()
-    showStealCircle(AUTO_STEAL_PROX_RADIUS)
-    progressBarBg.Visible = true
+    autoStealActive = true; autoSteal_initScanner(); startAutoStealLoop()
+    showStealCircle(AUTO_STEAL_PROX_RADIUS); progressBarBg.Visible = true
 end
-
 local function disableAutoSteal()
-    autoStealActive = false
-    stopAutoStealLoop()
-    hideStealCircle()
-    progressBarBg.Visible = false
-    progressFill.Size = UDim2.new(0, 0, 1, 0)
-    percentLabel.Text = "0%"
+    autoStealActive = false; stopAutoStealLoop(); hideStealCircle()
+    progressBarBg.Visible = false; progressFill.Size = UDim2.new(0,0,1,0); percentLabel.Text = "0%"
 end
 
 local function applyAutoStealState()
     if autoStealActive then
-        enableAutoSteal()
-        K5.Position = UDim2.new(1,-21,0.5,-9); K5.BackgroundColor3 = KnobOn
+        enableAutoSteal(); K5.Position=UDim2.new(1,-17,0.5,-7); K5.BackgroundColor3=KnobOn
     else
-        K5.Position = UDim2.new(0,3,0.5,-9);   K5.BackgroundColor3 = KnobOff
+        K5.Position=UDim2.new(0,3,0.5,-7); K5.BackgroundColor3=KnobOff
     end
 end
-
 autoStealActive = autoStealSaved
 applyAutoStealState()
-
 B5.MouseButton1Click:Connect(function()
     autoStealActive = not autoStealActive
     if autoStealActive then
         enableAutoSteal()
-        TweenService:Create(K5, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
+        TweenService:Create(K5, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
     else
         disableAutoSteal()
-        TweenService:Create(K5, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+        TweenService:Create(K5, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
     end
 end)
 
@@ -904,64 +832,58 @@ end)
 -- UNWALK
 -- ══════════════════════════════════════════
 local function enableUnwalk()
-    local char = me.Character; if not char then return end
-    local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
-    local anim = hum:FindFirstChildOfClass("Animator"); if not anim then return end
-    for _, t in ipairs(anim:GetPlayingAnimationTracks()) do t:Stop(0) end
+    local char=me.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local anim=hum:FindFirstChildOfClass("Animator"); if not anim then return end
+    for _,t in ipairs(anim:GetPlayingAnimationTracks()) do t:Stop(0) end
     if unwalkConn then unwalkConn:Disconnect() end
     unwalkConn = RS.Heartbeat:Connect(function()
-        if not unwalkOn then unwalkConn:Disconnect(); unwalkConn = nil; return end
-        local c  = me.Character; if not c then return end
-        local h  = c:FindFirstChildOfClass("Humanoid"); if not h then return end
-        local an = h:FindFirstChildOfClass("Animator"); if not an then return end
-        for _, t in ipairs(an:GetPlayingAnimationTracks()) do t:Stop(0) end
+        if not unwalkOn then unwalkConn:Disconnect(); unwalkConn=nil; return end
+        local c=me.Character; if not c then return end
+        local h=c:FindFirstChildOfClass("Humanoid"); if not h then return end
+        local an=h:FindFirstChildOfClass("Animator"); if not an then return end
+        for _,t in ipairs(an:GetPlayingAnimationTracks()) do t:Stop(0) end
     end)
 end
-
 local function disableUnwalk()
-    if unwalkConn then unwalkConn:Disconnect(); unwalkConn = nil end
+    if unwalkConn then unwalkConn:Disconnect(); unwalkConn=nil end
 end
-
 local function applyUnwalkState()
     if unwalkOn then
-        enableUnwalk()
-        K6.Position = UDim2.new(1,-21,0.5,-9); K6.BackgroundColor3 = KnobOn
+        enableUnwalk(); K6.Position=UDim2.new(1,-17,0.5,-7); K6.BackgroundColor3=KnobOn
     else
-        disableUnwalk()
-        K6.Position = UDim2.new(0,3,0.5,-9);   K6.BackgroundColor3 = KnobOff
+        disableUnwalk(); K6.Position=UDim2.new(0,3,0.5,-7); K6.BackgroundColor3=KnobOff
     end
 end
-
 unwalkOn = unwalkSaved
 applyUnwalkState()
-
 B6.MouseButton1Click:Connect(function()
     unwalkOn = not unwalkOn
     if unwalkOn then
         enableUnwalk()
-        TweenService:Create(K6, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
+        TweenService:Create(K6, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
     else
         disableUnwalk()
-        TweenService:Create(K6, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+        TweenService:Create(K6, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
     end
 end)
 
 -- ══════════════════════════════════════════
--- SAVE CONFIG BUTTON
+-- SAVE CONFIG (fijo al fondo)
 -- ══════════════════════════════════════════
 local SaveBtn = Instance.new("TextButton")
-SaveBtn.Size                   = UDim2.new(1, -24, 0, 32)
-SaveBtn.Position               = UDim2.new(0, 12, 1, -42)
+SaveBtn.Size                   = UDim2.new(1, -16, 0, SAVE_H)
+SaveBtn.Position               = UDim2.new(0, 8, 1, -(SAVE_H + PAD_BOT))
 SaveBtn.BackgroundColor3       = IndigoMid
 SaveBtn.BackgroundTransparency = 0.1
 SaveBtn.Text                   = "Save Config"
 SaveBtn.TextColor3             = White
 SaveBtn.Font                   = Enum.Font.GothamBold
-SaveBtn.TextSize               = 13
+SaveBtn.TextSize               = 12
 SaveBtn.BorderSizePixel        = 0
 SaveBtn.ZIndex                 = 6
 SaveBtn.Parent                 = Main
-Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 8)
 local SaveStroke = Instance.new("UIStroke")
 SaveStroke.Color = White; SaveStroke.Transparency = 0.6; SaveStroke.Thickness = 1
 SaveStroke.Parent = SaveBtn
@@ -969,28 +891,19 @@ SaveStroke.Parent = SaveBtn
 SaveBtn.MouseButton1Click:Connect(function()
     saveConfig()
     local orig = SaveBtn.Text
-    SaveBtn.Text = "Saved!"
-    SaveBtn.TextColor3 = Color3.fromRGB(150, 240, 180)
-    task.delay(1.2, function()
-        SaveBtn.Text = orig
-        SaveBtn.TextColor3 = White
-    end)
+    SaveBtn.Text = "Saved!"; SaveBtn.TextColor3 = Color3.fromRGB(150,240,180)
+    task.delay(1.2, function() SaveBtn.Text=orig; SaveBtn.TextColor3=White end)
 end)
 
 -- ══════════════════════════════════════════
 -- CERRAR
 -- ══════════════════════════════════════════
 CloseBtn.MouseButton1Click:Connect(function()
-    disableGalaxySkyBright()
-    toggleAntiRagdoll(false)
-    disableAutoSteal()
-    disableUnwalk()
+    disableGalaxySkyBright(); toggleAntiRagdoll(false); disableAutoSteal(); disableUnwalk()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-        Size     = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
+        Size=UDim2.new(0,0,0,0), Position=UDim2.new(0.5,0,0.5,0),
     })
-    t:Play()
-    t.Completed:Connect(function() ScreenGui:Destroy() end)
+    t:Play(); t.Completed:Connect(function() ScreenGui:Destroy() end)
 end)
 
 -- ══════════════════════════════════════════
@@ -999,25 +912,24 @@ end)
 local dragging, dragStart, startPos = false, nil, nil
 Header.InputBegan:Connect(function(inp)
     if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true; dragStart = inp.Position; startPos = Main.Position
+        dragging=true; dragStart=inp.Position; startPos=Main.Position
     end
 end)
 UserInputService.InputEnded:Connect(function(inp)
-    if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    if inp.UserInputType == Enum.UserInputType.MouseButton1 then dragging=false end
 end)
 UserInputService.InputChanged:Connect(function(inp)
     if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
         local d = inp.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)
     end
 end)
 
 -- ══════════════════════════════════════════
 -- ANIMACION ENTRADA
 -- ══════════════════════════════════════════
-Main.Size = UDim2.new(0, 0, 0, 0)
-Main.Position = UDim2.new(0.5, 0, 0.5, 0)
+Main.Size = UDim2.new(0,0,0,0)
+Main.Position = UDim2.new(0.5,0,0.5,0)
 TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size     = UDim2.new(0, GUI_W, 0, GUI_H),
-    Position = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2),
+    Size=UDim2.new(0,GUI_W,0,GUI_H), Position=UDim2.new(0.5,-GUI_W/2,0.5,-GUI_H/2),
 }):Play()
