@@ -277,10 +277,10 @@ local IndigoMid    = Color3.fromRGB(75,  75, 130)
 local White        = Color3.fromRGB(255, 255, 255)
 local KnobOff      = Color3.fromRGB(80,  85, 120)
 local KnobOn       = Color3.fromRGB(120, 130, 200)
-local GalaxyKnobOn = Color3.fromRGB(130, 110, 210)
-local RagKnobOn    = Color3.fromRGB(100, 200, 180)
-local JumpKnobOn   = Color3.fromRGB(100, 180, 240)
-local StealKnobOn  = Color3.fromRGB(255, 170,  60)
+local GalaxyKnobOn = Color3.fromRGB(120, 130, 200)
+local RagKnobOn    = Color3.fromRGB(120, 130, 200)
+local JumpKnobOn   = Color3.fromRGB(120, 130, 200)
+local StealKnobOn  = Color3.fromRGB(120, 130, 200)
 
 if PlayerGui:FindFirstChild("KmoneyHub") then
     PlayerGui:FindFirstChild("KmoneyHub"):Destroy()
@@ -623,8 +623,10 @@ end
 -- Radio visual (círculo neón en el suelo)
 local stealCirclePart = nil
 local stealCircleConn = nil
+local stealCircleSel  = nil
 
 local function hideStealCircle()
+    if stealCircleSel  then stealCircleSel:Destroy();  stealCircleSel  = nil end
     if stealCirclePart then stealCirclePart:Destroy(); stealCirclePart = nil end
     if stealCircleConn then stealCircleConn:Disconnect(); stealCircleConn = nil end
 end
@@ -635,12 +637,19 @@ local function showStealCircle(radius)
     stealCirclePart.Name        = "KmoneyStealCircle"
     stealCirclePart.Anchored    = true
     stealCirclePart.CanCollide  = false
-    stealCirclePart.Transparency = 0.65
+    stealCirclePart.Transparency = 1
     stealCirclePart.Material    = Enum.Material.Neon
-    stealCirclePart.Color       = StealKnobOn
+    stealCirclePart.Color       = IndigoMid
     stealCirclePart.Shape       = Enum.PartType.Cylinder
     stealCirclePart.Size        = Vector3.new(0.05, radius*2, radius*2)
     stealCirclePart.Parent      = workspace
+    stealCircleSel              = Instance.new("SelectionBox")
+    stealCircleSel.Adornee      = stealCirclePart
+    stealCircleSel.Color3       = IndigoMid
+    stealCircleSel.LineThickness = 0.04
+    stealCircleSel.SurfaceTransparency = 1
+    stealCircleSel.SurfaceColor3 = IndigoMid
+    stealCircleSel.Parent       = workspace
     if stealCircleConn then stealCircleConn:Disconnect() end
     stealCircleConn = RunService.Heartbeat:Connect(function()
         if not autoStealActive then hideStealCircle(); return end
@@ -863,7 +872,7 @@ SaveBtn.Size                   = UDim2.new(1, -24, 0, 36)
 SaveBtn.Position               = UDim2.new(0, 12, 1, -48)
 SaveBtn.BackgroundColor3       = IndigoMid
 SaveBtn.BackgroundTransparency = 0.1
-SaveBtn.Text                   = "💾  Save Config"
+SaveBtn.Text                   = "Save Config"
 SaveBtn.TextColor3             = White
 SaveBtn.Font                   = Enum.Font.GothamBold
 SaveBtn.TextSize               = 14
@@ -878,7 +887,7 @@ SaveStroke.Parent = SaveBtn
 SaveBtn.MouseButton1Click:Connect(function()
     saveConfig()
     local orig = SaveBtn.Text
-    SaveBtn.Text = "✔  Saved!"
+    SaveBtn.Text = "Saved!"
     SaveBtn.TextColor3 = Color3.fromRGB(150, 240, 180)
     task.delay(1.2, function()
         SaveBtn.Text = orig
