@@ -296,7 +296,7 @@ end
 -- LAYOUT
 -- ══════════════════════════════════════════
 local GUI_W    = 300
-local GUI_H    = 360
+local GUI_H    = 492
 local ROW_H    = 30
 local ROW_GAP  = 3
 local SEC_H    = 14
@@ -458,7 +458,7 @@ end
 -- POSICIONES
 -- VISUAL : 2 filas (Dark Mode, Galaxy)
 -- MISC   : 4 filas (Anti Ragdoll, Inf Jump, Unwalk, ESP)
--- AUTO   : 1 fila  (Auto Steal)
+-- AUTO   : 5 filas (Auto Steal, Auto Left, Auto Right, Auto Left Play, Auto Right Play)
 -- ══════════════════════════════════════════
 local GAP_SEC = 6
 
@@ -482,7 +482,11 @@ local B7, K7 = makeToggle("ESP",          miscRowY(4))
 
 -- ── Sección AUTO ──
 makeSectionLabel("— AUTO —", AUTO_BASE)
-local B5, K5, AutoStealRow = makeToggle("Auto Steal  ⚙️", autoRowY(1))
+local B5,  K5,  AutoStealRow    = makeToggle("Auto Steal  ⚙️",   autoRowY(1))
+local B8,  K8                   = makeToggle("Auto Left",         autoRowY(2))
+local B9,  K9                   = makeToggle("Auto Right",        autoRowY(3))
+local B10, K10                  = makeToggle("Auto Left Play",    autoRowY(4))
+local B11, K11                  = makeToggle("Auto Right Play",   autoRowY(5))
 
 -- ══════════════════════════════════════════
 -- MINI PANEL AUTO STEAL (right-click)
@@ -1115,6 +1119,278 @@ B5.MouseButton1Click:Connect(function()
     end
 end)
 
+
+-- ══════════════════════════════════════════
+-- AUTO LEFT / RIGHT / LEFT PLAY / RIGHT PLAY
+-- ══════════════════════════════════════════
+local NORMAL_SPEED   = 16
+local CARRY_SPEED    = 12
+
+-- Coordenadas — cámbialas a las tuyas
+local POSITION_L1  = Vector3.new(0,  0,  0)
+local POSITION_L2  = Vector3.new(0,  0,  0)
+local POSITION_R1  = Vector3.new(0,  0,  0)
+local POSITION_R2  = Vector3.new(0,  0,  0)
+local ALP_P1       = Vector3.new(0,  0,  0)
+local ALP_P2       = Vector3.new(0,  0,  0)
+local ALP_P3       = Vector3.new(0,  0,  0)
+local ARP_P1       = Vector3.new(0,  0,  0)
+local ARP_P2       = Vector3.new(0,  0,  0)
+local ARP_P3       = Vector3.new(0,  0,  0)
+
+local AutoLeftEnabled      = false
+local AutoRightEnabled     = false
+local AutoLeftPlayEnabled  = false
+local AutoRightPlayEnabled = false
+
+local autoLeftConnection      = nil
+local autoRightConnection     = nil
+local autoLeftPlayConnection  = nil
+local autoRightPlayConnection = nil
+
+local autoLeftPhase      = 1
+local autoRightPhase     = 1
+local autoLeftPlayPhase  = 1
+local autoRightPlayPhase = 1
+
+local function startAutoLeft()
+    if autoLeftConnection then autoLeftConnection:Disconnect() end
+    autoLeftPhase = 1
+    autoLeftConnection = RunService.Heartbeat:Connect(function()
+        if not AutoLeftEnabled then return end
+        local c = me.Character; if not c then return end
+        local h = c:FindFirstChild("HumanoidRootPart")
+        local hum = c:FindFirstChildOfClass("Humanoid")
+        if not h or not hum then return end
+        if autoLeftPhase == 1 then
+            local dist = (Vector3.new(POSITION_L1.X,h.Position.Y,POSITION_L1.Z)-h.Position).Magnitude
+            if dist < 1 then autoLeftPhase = 2 return end
+            local dir = Vector3.new((POSITION_L1-h.Position).X,0,(POSITION_L1-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity = Vector3.new(dir.X*NORMAL_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*NORMAL_SPEED)
+        elseif autoLeftPhase == 2 then
+            local dist = (Vector3.new(POSITION_L2.X,h.Position.Y,POSITION_L2.Z)-h.Position).Magnitude
+            if dist < 1 then
+                hum:Move(Vector3.zero,false); h.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                AutoLeftEnabled = false
+                if autoLeftConnection then autoLeftConnection:Disconnect(); autoLeftConnection = nil end
+                autoLeftPhase = 1
+                TweenService:Create(K8, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+                return
+            end
+            local dir = Vector3.new((POSITION_L2-h.Position).X,0,(POSITION_L2-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity = Vector3.new(dir.X*NORMAL_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*NORMAL_SPEED)
+        end
+    end)
+end
+
+local function stopAutoLeft()
+    if autoLeftConnection then autoLeftConnection:Disconnect(); autoLeftConnection = nil end
+    autoLeftPhase = 1
+    local c = me.Character
+    if c then local hum = c:FindFirstChildOfClass("Humanoid"); if hum then hum:Move(Vector3.zero,false) end end
+end
+
+local function startAutoRight()
+    if autoRightConnection then autoRightConnection:Disconnect() end
+    autoRightPhase = 1
+    local arLastPos, arStuckTimer = nil, 0
+    autoRightConnection = RunService.Heartbeat:Connect(function(dt)
+        if not AutoRightEnabled then return end
+        local c = me.Character; if not c then return end
+        local h = c:FindFirstChild("HumanoidRootPart")
+        local hum = c:FindFirstChildOfClass("Humanoid")
+        if not h or not hum then return end
+        local currentPos = h.Position
+        if arLastPos then
+            if (currentPos-arLastPos).Magnitude < 0.05 then arStuckTimer=arStuckTimer+dt else arStuckTimer=0 end
+        end
+        arLastPos = currentPos
+        if autoRightPhase == 1 then
+            local dist = (Vector3.new(POSITION_R1.X,h.Position.Y,POSITION_R1.Z)-h.Position).Magnitude
+            if dist < 1 then autoRightPhase=2; arStuckTimer=0 return end
+            if arStuckTimer > 0.4 then
+                arStuckTimer=0
+                local sd=(POSITION_R1-h.Position)
+                local ss=Vector3.new(sd.X,0,sd.Z).Unit*math.min(4,sd.Magnitude)
+                h.CFrame=CFrame.new(h.Position+ss); h.AssemblyLinearVelocity=Vector3.zero return
+            end
+            local dir=Vector3.new((POSITION_R1-h.Position).X,0,(POSITION_R1-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*NORMAL_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*NORMAL_SPEED)
+        elseif autoRightPhase == 2 then
+            local dist=(Vector3.new(POSITION_R2.X,h.Position.Y,POSITION_R2.Z)-h.Position).Magnitude
+            if dist < 1 then
+                hum:Move(Vector3.zero,false); h.AssemblyLinearVelocity=Vector3.new(0,0,0)
+                AutoRightEnabled = false
+                if autoRightConnection then autoRightConnection:Disconnect(); autoRightConnection = nil end
+                autoRightPhase = 1
+                TweenService:Create(K9, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+                return
+            end
+            if arStuckTimer > 0.4 then
+                arStuckTimer=0
+                local sd=(POSITION_R2-h.Position)
+                local ss=Vector3.new(sd.X,0,sd.Z).Unit*math.min(4,sd.Magnitude)
+                h.CFrame=CFrame.new(h.Position+ss); h.AssemblyLinearVelocity=Vector3.zero return
+            end
+            local dir=Vector3.new((POSITION_R2-h.Position).X,0,(POSITION_R2-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*NORMAL_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*NORMAL_SPEED)
+        end
+    end)
+end
+
+local function stopAutoRight()
+    if autoRightConnection then autoRightConnection:Disconnect(); autoRightConnection = nil end
+    autoRightPhase = 1
+    local c = me.Character
+    if c then local hum = c:FindFirstChildOfClass("Humanoid"); if hum then hum:Move(Vector3.zero,false) end end
+end
+
+local function startAutoLeftPlay()
+    if autoLeftPlayConnection then autoLeftPlayConnection:Disconnect() end
+    autoLeftPlayPhase = 1
+    autoLeftPlayConnection = RunService.Heartbeat:Connect(function()
+        if not AutoLeftPlayEnabled then return end
+        local c = me.Character; if not c then return end
+        local h = c:FindFirstChild("HumanoidRootPart")
+        local hum = c:FindFirstChildOfClass("Humanoid")
+        if not h or not hum then return end
+        if autoLeftPlayPhase == 1 then
+            local dist=(Vector3.new(ALP_P1.X,h.Position.Y,ALP_P1.Z)-h.Position).Magnitude
+            if dist<1.5 then autoLeftPlayPhase=2 return end
+            local dir=Vector3.new((ALP_P1-h.Position).X,0,(ALP_P1-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*NORMAL_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*NORMAL_SPEED)
+        elseif autoLeftPlayPhase == 2 then
+            local dist=(Vector3.new(ALP_P2.X,h.Position.Y,ALP_P2.Z)-h.Position).Magnitude
+            if dist<1.5 then autoLeftPlayPhase=3 return end
+            local dir=Vector3.new((ALP_P2-h.Position).X,0,(ALP_P2-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*CARRY_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*CARRY_SPEED)
+        elseif autoLeftPlayPhase == 3 then
+            local dist=(Vector3.new(ALP_P1.X,h.Position.Y,ALP_P1.Z)-h.Position).Magnitude
+            if dist<1.5 then autoLeftPlayPhase=4 return end
+            local dir=Vector3.new((ALP_P1-h.Position).X,0,(ALP_P1-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*CARRY_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*CARRY_SPEED)
+        elseif autoLeftPlayPhase == 4 then
+            local dist=(Vector3.new(ALP_P3.X,h.Position.Y,ALP_P3.Z)-h.Position).Magnitude
+            if dist<1.5 then
+                hum:Move(Vector3.zero,false); h.AssemblyLinearVelocity=Vector3.new(0,0,0)
+                AutoLeftPlayEnabled = false
+                if autoLeftPlayConnection then autoLeftPlayConnection:Disconnect(); autoLeftPlayConnection = nil end
+                autoLeftPlayPhase = 1
+                TweenService:Create(K10, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+                return
+            end
+            local dir=Vector3.new((ALP_P3-h.Position).X,0,(ALP_P3-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*CARRY_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*CARRY_SPEED)
+        end
+    end)
+end
+
+local function stopAutoLeftPlay()
+    if autoLeftPlayConnection then autoLeftPlayConnection:Disconnect(); autoLeftPlayConnection = nil end
+    autoLeftPlayPhase = 1
+    local c = me.Character
+    if c then local hum = c:FindFirstChildOfClass("Humanoid"); if hum then hum:Move(Vector3.zero,false) end end
+end
+
+local function startAutoRightPlay()
+    if autoRightPlayConnection then autoRightPlayConnection:Disconnect() end
+    autoRightPlayPhase = 1
+    autoRightPlayConnection = RunService.Heartbeat:Connect(function()
+        if not AutoRightPlayEnabled then return end
+        local c = me.Character; if not c then return end
+        local h = c:FindFirstChild("HumanoidRootPart")
+        local hum = c:FindFirstChildOfClass("Humanoid")
+        if not h or not hum then return end
+        if autoRightPlayPhase == 1 then
+            local dist=(Vector3.new(ARP_P1.X,h.Position.Y,ARP_P1.Z)-h.Position).Magnitude
+            if dist<1.5 then autoRightPlayPhase=2 return end
+            local dir=Vector3.new((ARP_P1-h.Position).X,0,(ARP_P1-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*NORMAL_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*NORMAL_SPEED)
+        elseif autoRightPlayPhase == 2 then
+            local dist=(Vector3.new(ARP_P2.X,h.Position.Y,ARP_P2.Z)-h.Position).Magnitude
+            if dist<1.5 then autoRightPlayPhase=3 return end
+            local dir=Vector3.new((ARP_P2-h.Position).X,0,(ARP_P2-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*CARRY_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*CARRY_SPEED)
+        elseif autoRightPlayPhase == 3 then
+            local dist=(Vector3.new(ARP_P1.X,h.Position.Y,ARP_P1.Z)-h.Position).Magnitude
+            if dist<1.5 then autoRightPlayPhase=4 return end
+            local dir=Vector3.new((ARP_P1-h.Position).X,0,(ARP_P1-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*CARRY_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*CARRY_SPEED)
+        elseif autoRightPlayPhase == 4 then
+            local dist=(Vector3.new(ARP_P3.X,h.Position.Y,ARP_P3.Z)-h.Position).Magnitude
+            if dist<1.5 then
+                hum:Move(Vector3.zero,false); h.AssemblyLinearVelocity=Vector3.new(0,0,0)
+                AutoRightPlayEnabled = false
+                if autoRightPlayConnection then autoRightPlayConnection:Disconnect(); autoRightPlayConnection = nil end
+                autoRightPlayPhase = 1
+                TweenService:Create(K11, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+                return
+            end
+            local dir=Vector3.new((ARP_P3-h.Position).X,0,(ARP_P3-h.Position).Z).Unit
+            hum:Move(dir,false); h.AssemblyLinearVelocity=Vector3.new(dir.X*CARRY_SPEED,h.AssemblyLinearVelocity.Y,dir.Z*CARRY_SPEED)
+        end
+    end)
+end
+
+local function stopAutoRightPlay()
+    if autoRightPlayConnection then autoRightPlayConnection:Disconnect(); autoRightPlayConnection = nil end
+    autoRightPlayPhase = 1
+    local c = me.Character
+    if c then local hum = c:FindFirstChildOfClass("Humanoid"); if hum then hum:Move(Vector3.zero,false) end end
+end
+
+-- ── Toggle Auto Left ──
+K8.Position = UDim2.new(0,3,0.5,-7); K8.BackgroundColor3 = KnobOff
+B8.MouseButton1Click:Connect(function()
+    AutoLeftEnabled = not AutoLeftEnabled
+    if AutoLeftEnabled then
+        startAutoLeft()
+        TweenService:Create(K8, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
+    else
+        stopAutoLeft()
+        TweenService:Create(K8, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ── Toggle Auto Right ──
+K9.Position = UDim2.new(0,3,0.5,-7); K9.BackgroundColor3 = KnobOff
+B9.MouseButton1Click:Connect(function()
+    AutoRightEnabled = not AutoRightEnabled
+    if AutoRightEnabled then
+        startAutoRight()
+        TweenService:Create(K9, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
+    else
+        stopAutoRight()
+        TweenService:Create(K9, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ── Toggle Auto Left Play ──
+K10.Position = UDim2.new(0,3,0.5,-7); K10.BackgroundColor3 = KnobOff
+B10.MouseButton1Click:Connect(function()
+    AutoLeftPlayEnabled = not AutoLeftPlayEnabled
+    if AutoLeftPlayEnabled then
+        startAutoLeftPlay()
+        TweenService:Create(K10, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
+    else
+        stopAutoLeftPlay()
+        TweenService:Create(K10, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ── Toggle Auto Right Play ──
+K11.Position = UDim2.new(0,3,0.5,-7); K11.BackgroundColor3 = KnobOff
+B11.MouseButton1Click:Connect(function()
+    AutoRightPlayEnabled = not AutoRightPlayEnabled
+    if AutoRightPlayEnabled then
+        startAutoRightPlay()
+        TweenService:Create(K11, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
+    else
+        stopAutoRightPlay()
+        TweenService:Create(K11, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
 -- ══════════════════════════════════════════
 -- SAVE CONFIG
 -- ══════════════════════════════════════════
@@ -1147,6 +1423,7 @@ end)
 -- ══════════════════════════════════════════
 CloseBtn.MouseButton1Click:Connect(function()
     disableGalaxySkyBright(); toggleAntiRagdoll(false); disableAutoSteal(); disableUnwalk(); disableESP()
+    stopAutoLeft(); stopAutoRight(); stopAutoLeftPlay(); stopAutoRightPlay()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size=UDim2.new(0,0,0,0), Position=UDim2.new(0.5,0,0.5,0),
     })
