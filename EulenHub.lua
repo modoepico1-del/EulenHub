@@ -1,4 +1,4 @@
--- KMONEY HUB - 500x550
+-- KMONEY HUB - 500x300 (scrollable)
 
 local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
@@ -273,7 +273,7 @@ loadConfig()
 -- ══════════════════════════════════════════
 -- COLORES
 -- ══════════════════════════════════════════
-local NavyDark  = Color3.fromRGB(30,  35,  65)
+local NavyDark   = Color3.fromRGB(30,  35,  65)
 local IndigoDark = Color3.fromRGB(45,  48,  90)
 local IndigoMid  = Color3.fromRGB(75,  75, 130)
 local White      = Color3.fromRGB(255, 255, 255)
@@ -285,9 +285,9 @@ if PlayerGui:FindFirstChild("KmoneyHub") then
 end
 
 -- ══════════════════════════════════════════
--- GUI  (500 x 550)
+-- GUI  (500 x 300)
 -- ══════════════════════════════════════════
-local GUI_W, GUI_H = 500, 550
+local GUI_W, GUI_H = 500, 300
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KmoneyHub"
@@ -313,6 +313,7 @@ BgGrad.Color = ColorSequence.new({
 BgGrad.Rotation = 135
 BgGrad.Parent = Main
 
+-- Header
 local Header = Instance.new("Frame")
 Header.Size                   = UDim2.new(1, 0, 0, 52)
 Header.BackgroundColor3       = IndigoDark
@@ -360,12 +361,44 @@ CloseBtn.ZIndex                 = 6
 CloseBtn.Parent                 = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
 
-local Content = Instance.new("Frame")
-Content.Size                   = UDim2.new(1, -24, 1, -118)
-Content.Position               = UDim2.new(0, 12, 0, 60)
-Content.BackgroundTransparency = 1
-Content.ZIndex                 = 3
-Content.Parent                 = Main
+-- ══════════════════════════════════════════
+-- SCROLL FRAME (contenido desplazable)
+-- ══════════════════════════════════════════
+-- Altura del area de scroll: GUI_H - header(52) - saveBtn(46) - margenes
+local SCROLL_TOP    = 60
+local SCROLL_BOTTOM = 50  -- espacio para el boton Save
+local SCROLL_H      = GUI_H - SCROLL_TOP - SCROLL_BOTTOM  -- 300-60-50 = 190
+
+-- Cantidad de filas: 6 toggles x 56px + label 24px + padding = ~364px total
+local CONTENT_ROWS  = 6
+local ROW_H         = 48
+local ROW_GAP       = 8
+local SECTION_H     = 24
+local TOTAL_CONTENT = SECTION_H + CONTENT_ROWS * (ROW_H + ROW_GAP) + 10  -- ~370px
+
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Name                  = "ScrollFrame"
+ScrollFrame.Size                  = UDim2.new(1, -12, 0, SCROLL_H)
+ScrollFrame.Position              = UDim2.new(0, 6, 0, SCROLL_TOP)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.BorderSizePixel       = 0
+ScrollFrame.ScrollBarThickness    = 4
+ScrollFrame.ScrollBarImageColor3  = IndigoMid
+ScrollFrame.CanvasSize            = UDim2.new(0, 0, 0, TOTAL_CONTENT)
+ScrollFrame.ScrollingDirection    = Enum.ScrollingDirection.Y
+ScrollFrame.ElasticBehavior       = Enum.ElasticBehavior.WhenScrollable
+ScrollFrame.ZIndex                = 3
+ScrollFrame.Parent                = Main
+
+-- Padding interno del scroll
+local UIPadding = Instance.new("UIPadding")
+UIPadding.PaddingLeft   = UDim.new(0, 6)
+UIPadding.PaddingRight  = UDim.new(0, 6)
+UIPadding.PaddingTop    = UDim.new(0, 4)
+UIPadding.Parent        = ScrollFrame
+
+-- Usamos Content como referencia al ScrollFrame para los toggles
+local Content = ScrollFrame
 
 -- ══════════════════════════════════════════
 -- TOGGLE HELPER
@@ -374,7 +407,7 @@ local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
 
 local function makeToggle(labelText, yPos)
     local Row = Instance.new("Frame")
-    Row.Size                   = UDim2.new(1, 0, 0, 48)
+    Row.Size                   = UDim2.new(1, -12, 0, ROW_H)
     Row.Position               = UDim2.new(0, 0, 0, yPos)
     Row.BackgroundColor3       = IndigoDark
     Row.BackgroundTransparency = 0.3
@@ -427,7 +460,7 @@ end
 -- SECCION MISC
 -- ══════════════════════════════════════════
 local MiscLabel = Instance.new("TextLabel")
-MiscLabel.Size                   = UDim2.new(1, 0, 0, 20)
+MiscLabel.Size                   = UDim2.new(1, -12, 0, SECTION_H)
 MiscLabel.Position               = UDim2.new(0, 0, 0, 0)
 MiscLabel.BackgroundTransparency = 1
 MiscLabel.Text                   = "— MISC —"
@@ -438,11 +471,22 @@ MiscLabel.TextXAlignment         = Enum.TextXAlignment.Left
 MiscLabel.ZIndex                 = 4
 MiscLabel.Parent                 = Content
 
--- ══════════════════════════════════════════
--- TOGGLE: DARK MODE  (yPos 24)
--- ══════════════════════════════════════════
-local B1, K1 = makeToggle("Dark Mode", 24)
+-- yPos helper: SECTION_H + index * (ROW_H + ROW_GAP)
+local function rowY(i) return SECTION_H + (i-1) * (ROW_H + ROW_GAP) end
 
+-- ══════════════════════════════════════════
+-- TOGGLES
+-- ══════════════════════════════════════════
+local B1, K1 = makeToggle("Dark Mode",    rowY(1))
+local B2, K2 = makeToggle("Galaxy",       rowY(2))
+local B3, K3 = makeToggle("Anti Ragdoll", rowY(3))
+local B4, K4 = makeToggle("Inf Jump",     rowY(4))
+local B5, K5 = makeToggle("Auto Steal",   rowY(5))
+local B6, K6 = makeToggle("Unwalk",       rowY(6))
+
+-- ══════════════════════════════════════════
+-- DARK MODE
+-- ══════════════════════════════════════════
 local function applyDarkState()
     if darkOn then
         enableOptimizer(); enableDarkMode()
@@ -466,10 +510,8 @@ B1.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- TOGGLE: GALAXY  (yPos 80)
+-- GALAXY
 -- ══════════════════════════════════════════
-local B2, K2 = makeToggle("Galaxy", 80)
-
 local function applyGalaxyState()
     if galaxyOn then
         config.GalaxySkyBright = true; enableGalaxySkyBright()
@@ -494,10 +536,8 @@ B2.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- TOGGLE: ANTI RAGDOLL  (yPos 136)
+-- ANTI RAGDOLL
 -- ══════════════════════════════════════════
-local B3, K3 = makeToggle("Anti Ragdoll", 136)
-
 local function applyAntiRagdollState()
     if antiRagdollOn then
         toggleAntiRagdoll(true)
@@ -523,10 +563,8 @@ B3.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- TOGGLE: INF JUMP  (yPos 192)
+-- INF JUMP
 -- ══════════════════════════════════════════
-local B4, K4 = makeToggle("Inf Jump", 192)
-
 local jumpForce      = 50
 local clampFallSpeed = 80
 
@@ -567,20 +605,17 @@ B4.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- TOGGLE: AUTO STEAL  (yPos 248)
+-- AUTO STEAL - Barra de progreso
 -- ══════════════════════════════════════════
-local B5, K5 = makeToggle("Auto Steal", 248)
-
--- Barra de progreso
 local progressBarBg = Instance.new("Frame")
-progressBarBg.Size                   = UDim2.new(0, GUI_W - 24, 0, 10)
-progressBarBg.Position               = UDim2.new(0, 12, 1, 8)
+progressBarBg.Size                   = UDim2.new(1, -24, 0, 6)
+progressBarBg.Position               = UDim2.new(0, 12, 0, SCROLL_TOP + SCROLL_H + 6)
 progressBarBg.BackgroundColor3       = NavyDark
 progressBarBg.BackgroundTransparency = 0.15
 progressBarBg.Visible                = false
 progressBarBg.ZIndex                 = 10
 progressBarBg.Parent                 = Main
-Instance.new("UICorner", progressBarBg).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", progressBarBg).CornerRadius = UDim.new(0, 6)
 local pbStroke = Instance.new("UIStroke", progressBarBg)
 pbStroke.Color = IndigoMid; pbStroke.Thickness = 1; pbStroke.Transparency = 0.3
 
@@ -590,13 +625,13 @@ progressFill.BackgroundColor3 = KnobOn
 progressFill.BorderSizePixel  = 0
 progressFill.ZIndex           = 11
 progressFill.Parent           = progressBarBg
-Instance.new("UICorner", progressFill).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", progressFill).CornerRadius = UDim.new(0, 6)
 
 local percentLabel = Instance.new("TextLabel")
 percentLabel.Size                   = UDim2.new(1, 0, 1, 0)
 percentLabel.BackgroundTransparency = 1
 percentLabel.Font                   = Enum.Font.GothamBold
-percentLabel.TextSize               = 9
+percentLabel.TextSize               = 7
 percentLabel.TextColor3             = White
 percentLabel.Text                   = "0%"
 percentLabel.ZIndex                 = 12
@@ -619,7 +654,7 @@ local function animateProgressBar()
 end
 
 -- ══════════════════════════════════════════
--- CIRCULO BLANCO (solo borde, forma cilindro = circulo en el suelo)
+-- CIRCULO BLANCO
 -- ══════════════════════════════════════════
 local stealCirclePart = nil
 local stealCircleSel  = nil
@@ -640,7 +675,7 @@ local function showStealCircle(radius)
     stealCirclePart.Name         = "KmoneyStealCircle"
     stealCirclePart.Anchored     = true
     stealCirclePart.CanCollide   = false
-    stealCirclePart.Transparency = 1                        -- sin relleno
+    stealCirclePart.Transparency = 1
     stealCirclePart.Material     = Enum.Material.Plastic
     stealCirclePart.Shape        = Enum.PartType.Cylinder
     stealCirclePart.Size         = Vector3.new(0.05, radius*2, radius*2)
@@ -648,9 +683,9 @@ local function showStealCircle(radius)
 
     stealCircleSel                    = Instance.new("SelectionBox")
     stealCircleSel.Adornee            = stealCirclePart
-    stealCircleSel.Color3             = Color3.fromRGB(255, 255, 255) -- borde blanco
+    stealCircleSel.Color3             = Color3.fromRGB(255, 255, 255)
     stealCircleSel.LineThickness      = 0.05
-    stealCircleSel.SurfaceTransparency = 1                 -- sin relleno de cara
+    stealCircleSel.SurfaceTransparency = 1
     stealCircleSel.SurfaceColor3      = Color3.fromRGB(255, 255, 255)
     stealCircleSel.Parent             = workspace
 
@@ -775,7 +810,6 @@ local function autoSteal_findPrompt(animalData)
     return nil
 end
 
--- FIX: sin task.spawn, disparo inmediato
 local function autoSteal_execute(prompt)
     local data = autoStealInternalCache[prompt]
     if data and not data.ready then return false end
@@ -867,10 +901,8 @@ B5.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- TOGGLE: UNWALK  (yPos 304)
+-- UNWALK
 -- ══════════════════════════════════════════
-local B6, K6 = makeToggle("Unwalk", 304)
-
 local function enableUnwalk()
     local char = me.Character; if not char then return end
     local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
@@ -918,14 +950,14 @@ end)
 -- SAVE CONFIG BUTTON
 -- ══════════════════════════════════════════
 local SaveBtn = Instance.new("TextButton")
-SaveBtn.Size                   = UDim2.new(1, -24, 0, 36)
-SaveBtn.Position               = UDim2.new(0, 12, 1, -48)
+SaveBtn.Size                   = UDim2.new(1, -24, 0, 32)
+SaveBtn.Position               = UDim2.new(0, 12, 1, -42)
 SaveBtn.BackgroundColor3       = IndigoMid
 SaveBtn.BackgroundTransparency = 0.1
 SaveBtn.Text                   = "Save Config"
 SaveBtn.TextColor3             = White
 SaveBtn.Font                   = Enum.Font.GothamBold
-SaveBtn.TextSize               = 14
+SaveBtn.TextSize               = 13
 SaveBtn.BorderSizePixel        = 0
 SaveBtn.ZIndex                 = 6
 SaveBtn.Parent                 = Main
