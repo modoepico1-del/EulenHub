@@ -1,4 +1,4 @@
--- KMONEY HUB - 300x300
+-- KMONEY HUB - 300x330
 
 local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
@@ -226,6 +226,7 @@ end
 local infJumpOn              = false
 local autoStealActive        = false
 local unwalkOn               = false
+local espOn                  = false
 local unwalkConn             = nil
 local AUTO_STEAL_PROX_RADIUS = 7
 
@@ -238,6 +239,7 @@ local antiRagdollSaved = false
 local infJumpSaved     = false
 local autoStealSaved   = false
 local unwalkSaved      = false
+local espSaved         = false
 
 local function saveConfig()
     pcall(function()
@@ -249,6 +251,7 @@ local function saveConfig()
             AutoSteal   = autoStealActive,
             StealRadius = AUTO_STEAL_PROX_RADIUS,
             Unwalk      = unwalkOn,
+            ESP         = espOn,
         }))
     end)
 end
@@ -264,6 +267,7 @@ local function loadConfig()
             if data.AutoSteal   ~= nil then autoStealSaved         = data.AutoSteal   end
             if data.StealRadius ~= nil then AUTO_STEAL_PROX_RADIUS = data.StealRadius end
             if data.Unwalk      ~= nil then unwalkSaved            = data.Unwalk      end
+            if data.ESP         ~= nil then espSaved               = data.ESP         end
         end
     end)
 end
@@ -285,32 +289,30 @@ if PlayerGui:FindFirstChild("KmoneyHub") then
 end
 
 -- ══════════════════════════════════════════
--- LAYOUT (todo visible, sin scroll, 300×300)
+-- LAYOUT (7 filas, 300×330)
 --
 --  Header   : 40px
 --  Sep line : 1px
 --  PAD_TOP  : 3px
---  Sec label: 14px    → y=44
---  6 rows   : 6×30    → 180px
---  5 gaps   : 5×3     → 15px
+--  Sec label: 14px
+--  7 rows   : 7×30 = 210px
+--  6 gaps   : 6×3  = 18px
 --  PAD_MID  : 3px
 --  Save btn : 26px
 --  PAD_BOT  : 4px
---  ─────────────────
---  Total    : 40+1+3+14+180+15+3+26+4 = 286px  (dentro de 300) ✓
+--  Total    : 40+1+3+14+210+18+3+26+4 = 319 → GUI_H=330 ✓
 -- ══════════════════════════════════════════
-local GUI_W   = 300
-local GUI_H   = 300
-local ROW_H   = 30
-local ROW_GAP = 3
-local SEC_H   = 14
+local GUI_W    = 300
+local GUI_H    = 330
+local ROW_H    = 30
+local ROW_GAP  = 3
+local SEC_H    = 14
 local HEADER_H = 40
 local PAD_TOP  = 3
 local PAD_MID  = 3
 local SAVE_H   = 26
 local PAD_BOT  = 4
 
--- y absoluta donde empieza el contenido dentro de Main
 local CONTENT_Y = HEADER_H + 1 + PAD_TOP  -- 44
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -385,15 +387,14 @@ CloseBtn.ZIndex                 = 6
 CloseBtn.Parent                 = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
--- ── Content (frame plano, sin scroll) ──
+-- ── Content ──
 local Content = Instance.new("Frame")
-Content.Size                   = UDim2.new(1, -16, 0, SEC_H + 6*(ROW_H+ROW_GAP))
+Content.Size                   = UDim2.new(1, -16, 0, SEC_H + 7*(ROW_H+ROW_GAP))
 Content.Position               = UDim2.new(0, 8, 0, CONTENT_Y)
 Content.BackgroundTransparency = 1
 Content.ZIndex                 = 3
 Content.Parent                 = Main
 
--- ── Toggle helper compacto ──
 local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
 
 local function makeToggle(labelText, yPos)
@@ -447,7 +448,6 @@ local function makeToggle(labelText, yPos)
     return BtnTrack, Knob
 end
 
--- ── Section label ──
 local MiscLabel = Instance.new("TextLabel")
 MiscLabel.Size                   = UDim2.new(1, 0, 0, SEC_H)
 MiscLabel.Position               = UDim2.new(0, 0, 0, 0)
@@ -462,13 +462,13 @@ MiscLabel.Parent                 = Content
 
 local function rowY(i) return SEC_H + (i-1)*(ROW_H + ROW_GAP) end
 
--- ── Crea los 6 toggles ──
 local B1, K1 = makeToggle("Dark Mode",    rowY(1))
 local B2, K2 = makeToggle("Galaxy",       rowY(2))
 local B3, K3 = makeToggle("Anti Ragdoll", rowY(3))
 local B4, K4 = makeToggle("Inf Jump",     rowY(4))
 local B5, K5 = makeToggle("Auto Steal",   rowY(5))
 local B6, K6 = makeToggle("Unwalk",       rowY(6))
+local B7, K7 = makeToggle("ESP",          rowY(7))
 
 -- ══════════════════════════════════════════
 -- DARK MODE
@@ -584,7 +584,7 @@ B4.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- AUTO STEAL — barra de progreso (encima de Save)
+-- BARRA DE PROGRESO AUTO STEAL
 -- ══════════════════════════════════════════
 local progressBarBg = Instance.new("Frame")
 progressBarBg.Size                   = UDim2.new(1, -16, 0, 5)
@@ -631,47 +631,55 @@ local function animateProgressBar()
 end
 
 -- ══════════════════════════════════════════
--- CIRCULO BLANCO
+-- CIRCULO DE RADIO (neon disc, no cuadrado)
 -- ══════════════════════════════════════════
-local stealCirclePart, stealCircleSel, stealCircleConn = nil, nil, nil
+local stealCirclePart, stealCircleConn = nil, nil
 
 local function hideStealCircle()
-    if stealCircleSel  then stealCircleSel:Destroy();  stealCircleSel  = nil end
     if stealCirclePart then stealCirclePart:Destroy(); stealCirclePart = nil end
     if stealCircleConn then stealCircleConn:Disconnect(); stealCircleConn = nil end
 end
 
 local function showStealCircle(radius)
-    if stealCirclePart then stealCirclePart.Size = Vector3.new(0.05, radius*2, radius*2); return end
+    if stealCirclePart then
+        stealCirclePart.Size = Vector3.new(radius*2, 0.15, radius*2)
+        return
+    end
+    -- Disco plano neon = circulo visible sin SelectionBox
     stealCirclePart = Instance.new("Part")
-    stealCirclePart.Name = "KmoneyStealCircle"; stealCirclePart.Anchored = true
-    stealCirclePart.CanCollide = false; stealCirclePart.Transparency = 1
-    stealCirclePart.Material = Enum.Material.Plastic; stealCirclePart.Shape = Enum.PartType.Cylinder
-    stealCirclePart.Size = Vector3.new(0.05, radius*2, radius*2); stealCirclePart.Parent = workspace
-    stealCircleSel = Instance.new("SelectionBox")
-    stealCircleSel.Adornee = stealCirclePart; stealCircleSel.Color3 = Color3.fromRGB(255,255,255)
-    stealCircleSel.LineThickness = 0.05; stealCircleSel.SurfaceTransparency = 1
-    stealCircleSel.SurfaceColor3 = Color3.fromRGB(255,255,255); stealCircleSel.Parent = workspace
+    stealCirclePart.Name        = "KmoneyStealCircle"
+    stealCirclePart.Shape       = Enum.PartType.Cylinder
+    stealCirclePart.Size        = Vector3.new(0.15, radius*2, radius*2)
+    stealCirclePart.Anchored    = true
+    stealCirclePart.CanCollide  = false
+    stealCirclePart.CastShadow  = false
+    stealCirclePart.Material    = Enum.Material.Neon
+    stealCirclePart.Color       = Color3.fromRGB(255, 255, 255)
+    stealCirclePart.Transparency = 0.55
+    stealCirclePart.Parent      = workspace
+
     stealCircleConn = RunService.Heartbeat:Connect(function()
         if not autoStealActive then hideStealCircle(); return end
-        if stealCirclePart and me.Character then
-            local root = me.Character:FindFirstChild("HumanoidRootPart")
+        local char = me.Character
+        if char and stealCirclePart then
+            local root = char:FindFirstChild("HumanoidRootPart")
             if root then
-                stealCirclePart.CFrame = CFrame.new(root.Position + Vector3.new(0,-2.5,0)) * CFrame.Angles(0,0,math.rad(90))
+                stealCirclePart.CFrame = CFrame.new(root.Position + Vector3.new(0,-2.8,0))
+                    * CFrame.Angles(0, 0, math.rad(90))
             end
         end
     end)
 end
 
 -- ══════════════════════════════════════════
--- AUTO STEAL LOGICA
+-- AUTO STEAL — lógica mejorada (más rápido)
 -- ══════════════════════════════════════════
 local autoStealStealConnection = nil
 local autoStealAnimalsCache    = {}
 local autoStealPromptCache     = {}
-local autoStealInternalCache   = {}
-local autoStealIsStealing      = false
+local autoStealLastFire        = {}   -- uid → tick()
 local autoStealScannerStarted  = false
+local STEAL_COOLDOWN           = 0.08 -- segundos entre fires del mismo prompt
 
 local animalsDataAS = {}
 pcall(function()
@@ -711,8 +719,11 @@ local function autoSteal_scanPlot(plot)
                 end
             end
             table.insert(autoStealAnimalsCache, {
-                name=animalName, plot=plot.Name, slot=podium.Name,
-                worldPosition=podium:GetPivot().Position, uid=plot.Name.."_"..podium.Name,
+                name            = animalName,
+                plot            = plot.Name,
+                slot            = podium.Name,
+                worldPosition   = podium:GetPivot().Position,
+                uid             = plot.Name.."_"..podium.Name,
             })
         end
     end
@@ -729,83 +740,94 @@ local function autoSteal_initScanner()
             if plot:IsA("Model") then task.wait(0.5); autoSteal_scanPlot(plot) end
         end)
         task.spawn(function()
-            while task.wait(5) do
+            while task.wait(4) do
                 autoStealAnimalsCache = {}
+                autoStealPromptCache  = {}  -- limpia caché para que re-escanee prompts también
                 for _, plot in ipairs(plots:GetChildren()) do if plot:IsA("Model") then autoSteal_scanPlot(plot) end end
             end
         end)
     end)
 end
 
+-- Busca el ProximityPrompt del podium en el workspace
 local function autoSteal_findPrompt(animalData)
     if not animalData then return nil end
     local cached = autoStealPromptCache[animalData.uid]
     if cached and cached.Parent then return cached end
-    local plots  = workspace:FindFirstChild("Plots")
-    local plot   = plots and plots:FindFirstChild(animalData.plot);  if not plot   then return nil end
-    local podiums= plot:FindFirstChild("AnimalPodiums");             if not podiums then return nil end
-    local podium = podiums:FindFirstChild(animalData.slot);          if not podium  then return nil end
-    local base   = podium:FindFirstChild("Base");                    if not base    then return nil end
-    local spawn  = base:FindFirstChild("Spawn");                     if not spawn   then return nil end
-    local attach = spawn:FindFirstChild("PromptAttachment");         if not attach  then return nil end
-    for _, p in ipairs(attach:GetChildren()) do
-        if p:IsA("ProximityPrompt") then autoStealPromptCache[animalData.uid]=p; return p end
+    local plots   = workspace:FindFirstChild("Plots");                      if not plots   then return nil end
+    local plot    = plots:FindFirstChild(animalData.plot);                  if not plot    then return nil end
+    local podiums = plot:FindFirstChild("AnimalPodiums");                   if not podiums then return nil end
+    local podium  = podiums:FindFirstChild(animalData.slot);                if not podium  then return nil end
+    local base    = podium:FindFirstChild("Base");                          if not base    then return nil end
+    local spawn   = base:FindFirstChild("Spawn");                           if not spawn   then return nil end
+    -- busca en todos los hijos, no solo PromptAttachment
+    for _, desc in ipairs(spawn:GetDescendants()) do
+        if desc:IsA("ProximityPrompt") then
+            autoStealPromptCache[animalData.uid] = desc
+            return desc
+        end
     end
     return nil
 end
 
-local function autoSteal_execute(prompt)
-    local data = autoStealInternalCache[prompt]
-    if data and not data.ready then return false end
-    autoStealInternalCache[prompt] = { ready=false }
-    autoStealIsStealing = true
+-- Dispara el prompt si pasó el cooldown
+local function autoSteal_fire(prompt, uid)
+    local now  = tick()
+    local last = autoStealLastFire[uid] or 0
+    if (now - last) < STEAL_COOLDOWN then return false end
+    autoStealLastFire[uid] = now
     pcall(function() fireproximityprompt(prompt) end)
-    task.delay(0.15, function()
-        if autoStealInternalCache[prompt] then autoStealInternalCache[prompt].ready = true end
-        autoStealIsStealing = false
-    end)
     return true
 end
 
 local function autoSteal_getNearest()
-    local hrp = autoSteal_getHRP(); if not hrp then return nil end
-    local nearest, minDist = nil, math.huge
+    local hrp = autoSteal_getHRP(); if not hrp then return nil, nil end
+    local nearest, nearestPrompt, minDist = nil, nil, math.huge
     for _, animalData in ipairs(autoStealAnimalsCache) do
         if autoSteal_isMyBase(animalData.plot) then continue end
-        if animalData.worldPosition then
-            local dist = (hrp.Position - animalData.worldPosition).Magnitude
-            if dist < minDist then minDist=dist; nearest=animalData end
+        if not animalData.worldPosition then continue end
+        local dist = (hrp.Position - animalData.worldPosition).Magnitude
+        if dist < AUTO_STEAL_PROX_RADIUS and dist < minDist then
+            local prompt = autoStealPromptCache[animalData.uid]
+            if not prompt or not prompt.Parent then prompt = autoSteal_findPrompt(animalData) end
+            if prompt and prompt.Parent then
+                minDist = dist; nearest = animalData; nearestPrompt = prompt
+            end
         end
     end
-    return nearest
+    return nearest, nearestPrompt
 end
 
 local function startAutoStealLoop()
     if autoStealStealConnection then autoStealStealConnection:Disconnect() end
     autoStealStealConnection = RunService.Heartbeat:Connect(function()
-        if not autoStealActive or autoStealIsStealing then return end
-        local target = autoSteal_getNearest()
-        if not target or not target.worldPosition then return end
-        local hrp = autoSteal_getHRP(); if not hrp then return end
-        if (hrp.Position - target.worldPosition).Magnitude > AUTO_STEAL_PROX_RADIUS then return end
-        local prompt = autoStealPromptCache[target.uid]
-        if not prompt or not prompt.Parent then prompt = autoSteal_findPrompt(target) end
-        if prompt then if autoSteal_execute(prompt) then task.spawn(animateProgressBar) end end
+        if not autoStealActive then return end
+        local target, prompt = autoSteal_getNearest()
+        if not target or not prompt then return end
+        if autoSteal_fire(prompt, target.uid) then
+            task.spawn(animateProgressBar)
+        end
     end)
 end
 
 local function stopAutoStealLoop()
-    if autoStealStealConnection then autoStealStealConnection:Disconnect(); autoStealStealConnection=nil end
-    autoStealIsStealing = false
+    if autoStealStealConnection then autoStealStealConnection:Disconnect(); autoStealStealConnection = nil end
 end
 
 local function enableAutoSteal()
-    autoStealActive = true; autoSteal_initScanner(); startAutoStealLoop()
-    showStealCircle(AUTO_STEAL_PROX_RADIUS); progressBarBg.Visible = true
+    autoStealActive = true
+    autoSteal_initScanner()
+    startAutoStealLoop()
+    showStealCircle(AUTO_STEAL_PROX_RADIUS)
+    progressBarBg.Visible = true
 end
 local function disableAutoSteal()
-    autoStealActive = false; stopAutoStealLoop(); hideStealCircle()
-    progressBarBg.Visible = false; progressFill.Size = UDim2.new(0,0,1,0); percentLabel.Text = "0%"
+    autoStealActive = false
+    stopAutoStealLoop()
+    hideStealCircle()
+    progressBarBg.Visible = false
+    progressFill.Size = UDim2.new(0,0,1,0)
+    percentLabel.Text = "0%"
 end
 
 local function applyAutoStealState()
@@ -869,6 +891,110 @@ B6.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
+-- ESP
+-- ══════════════════════════════════════════
+local espObjects     = {}
+local espConnections = {}
+
+local function createESP(plr)
+    if plr == me then return end
+    if not plr.Character then return end
+    if plr.Character:FindFirstChild("NightESP") then return end
+    local c   = plr.Character
+    local hrp = c:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+    local head = c:FindFirstChild("Head")
+    local hum  = c:FindFirstChildOfClass("Humanoid")
+    if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+    local hitbox = Instance.new("BoxHandleAdornment")
+    hitbox.Name            = "NightESP"
+    hitbox.Adornee         = hrp
+    hitbox.Size            = Vector3.new(4, 6, 2)
+    hitbox.Color3          = Color3.fromRGB(255, 0, 50)
+    hitbox.Transparency    = 0.3
+    hitbox.ZIndex          = 10
+    hitbox.AlwaysOnTop     = true
+    hitbox.Parent          = c
+    espObjects[plr]        = hitbox
+    if head then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name         = "ESP_Name"
+        billboard.Adornee      = head
+        billboard.Size         = UDim2.new(0, 200, 0, 50)
+        billboard.StudsOffset  = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop  = true
+        billboard.Parent       = c
+        local label = Instance.new("TextLabel")
+        label.Size                  = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text                  = plr.DisplayName or plr.Name
+        label.TextColor3            = Color3.fromRGB(255, 0, 0)
+        label.Font                  = Enum.Font.GothamBold
+        label.TextScaled            = true
+        label.TextStrokeTransparency = 0.6
+        label.TextStrokeColor3      = Color3.fromRGB(0, 0, 0)
+        label.Parent                = billboard
+    end
+end
+
+local function removeESP(plr)
+    pcall(function()
+        if plr.Character then
+            local h = plr.Character:FindFirstChild("NightESP");  if h then h:Destroy() end
+            local n = plr.Character:FindFirstChild("ESP_Name");  if n then n:Destroy() end
+            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Automatic end
+        end
+        espObjects[plr] = nil
+    end)
+end
+
+local function enableESP()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= me then
+            if plr.Character then pcall(function() createESP(plr) end) end
+            local c = plr.CharacterAdded:Connect(function()
+                task.wait(0.1); if espOn then pcall(function() createESP(plr) end) end
+            end)
+            table.insert(espConnections, c)
+        end
+    end
+    local c2 = Players.PlayerAdded:Connect(function(plr)
+        if plr == me then return end
+        local c3 = plr.CharacterAdded:Connect(function()
+            task.wait(0.1); if espOn then pcall(function() createESP(plr) end) end
+        end)
+        table.insert(espConnections, c3)
+    end)
+    table.insert(espConnections, c2)
+end
+
+local function disableESP()
+    for _, plr in ipairs(Players:GetPlayers()) do pcall(function() removeESP(plr) end) end
+    for _, conn in ipairs(espConnections) do if conn and conn.Connected then conn:Disconnect() end end
+    espConnections = {}; espObjects = {}
+end
+
+local function applyEspState()
+    if espOn then
+        enableESP(); K7.Position=UDim2.new(1,-17,0.5,-7); K7.BackgroundColor3=KnobOn
+    else
+        disableESP(); K7.Position=UDim2.new(0,3,0.5,-7);  K7.BackgroundColor3=KnobOff
+    end
+end
+espOn = espSaved
+applyEspState()
+B7.MouseButton1Click:Connect(function()
+    espOn = not espOn
+    if espOn then
+        enableESP()
+        TweenService:Create(K7, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
+    else
+        disableESP()
+        TweenService:Create(K7, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ══════════════════════════════════════════
 -- SAVE CONFIG (fijo al fondo)
 -- ══════════════════════════════════════════
 local SaveBtn = Instance.new("TextButton")
@@ -899,7 +1025,7 @@ end)
 -- CERRAR
 -- ══════════════════════════════════════════
 CloseBtn.MouseButton1Click:Connect(function()
-    disableGalaxySkyBright(); toggleAntiRagdoll(false); disableAutoSteal(); disableUnwalk()
+    disableGalaxySkyBright(); toggleAntiRagdoll(false); disableAutoSteal(); disableUnwalk(); disableESP()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size=UDim2.new(0,0,0,0), Position=UDim2.new(0.5,0,0.5,0),
     })
