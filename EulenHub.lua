@@ -1,14 +1,15 @@
--- KMONEY HUB - 500x420
+-- KMONEY HUB - 500x490
 
-local Players          = game:GetService("Players")
-local TweenService     = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local Lighting         = game:GetService("Lighting")
-local HttpService      = game:GetService("HttpService")
-local RunService       = game:GetService("RunService")
-local LocalPlayer      = Players.LocalPlayer
-local PlayerGui        = LocalPlayer:WaitForChild("PlayerGui")
-local me               = LocalPlayer
+local Players           = game:GetService("Players")
+local TweenService      = game:GetService("TweenService")
+local UserInputService  = game:GetService("UserInputService")
+local Lighting          = game:GetService("Lighting")
+local HttpService       = game:GetService("HttpService")
+local RunService        = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer       = Players.LocalPlayer
+local PlayerGui         = LocalPlayer:WaitForChild("PlayerGui")
+local me                = LocalPlayer
 
 local CONFIG_FILE = "kmoney_config.json"
 
@@ -147,21 +148,19 @@ local function cacheCharacterData()
     local root = char:FindFirstChild("HumanoidRootPart")
     if not hum or not root then return false end
     cachedCharData = {
-        character        = char,
-        humanoid         = hum,
-        root             = root,
+        character         = char,
+        humanoid          = hum,
+        root              = root,
         originalWalkSpeed = hum.WalkSpeed,
         originalJumpPower = hum.JumpPower,
-        isFrozen         = false,
+        isFrozen          = false,
     }
     return true
 end
 
 local function disconnectAllRagdoll()
     for _, conn in ipairs(ragdollConnections) do
-        if typeof(conn) == "RBXScriptConnection" then
-            pcall(function() conn:Disconnect() end)
-        end
+        if typeof(conn) == "RBXScriptConnection" then pcall(function() conn:Disconnect() end) end
     end
     ragdollConnections = {}
 end
@@ -201,13 +200,9 @@ end
 local function antiRagdollLoop()
     while antiRagdollMode do
         task.wait()
-        if isRagdolled() then
-            removeRagdollConstraints()
-            forceExitRagdoll()
-        end
+        if isRagdolled() then removeRagdollConstraints(); forceExitRagdoll() end
         local cam = workspace.CurrentCamera
-        if cam and cachedCharData.humanoid
-        and cam.CameraSubject ~= cachedCharData.humanoid then
+        if cam and cachedCharData.humanoid and cam.CameraSubject ~= cachedCharData.humanoid then
             cam.CameraSubject = cachedCharData.humanoid
         end
     end
@@ -219,30 +214,30 @@ local function toggleAntiRagdoll(enable)
         if not cacheCharacterData() then return end
         antiRagdollMode = "v1"
         local charConn = me.CharacterAdded:Connect(function()
-            task.wait(0.5)
-            if antiRagdollMode then cacheCharacterData() end
+            task.wait(0.5); if antiRagdollMode then cacheCharacterData() end
         end)
         table.insert(ragdollConnections, charConn)
         task.spawn(antiRagdollLoop)
     else
-        antiRagdollMode = nil
-        disconnectAllRagdoll()
-        cachedCharData  = {}
+        antiRagdollMode = nil; disconnectAllRagdoll(); cachedCharData = {}
     end
 end
 
 -- ══════════════════════════════════════════
--- INF JUMP STATE
+-- ESTADOS
 -- ══════════════════════════════════════════
-local infJumpOn = false
+local infJumpOn           = false
+local autoStealActive     = false
+local AUTO_STEAL_PROX_RADIUS = 7
 
 -- ══════════════════════════════════════════
--- SAVE CONFIG
+-- SAVE / LOAD CONFIG
 -- ══════════════════════════════════════════
 local darkOn           = false
 local galaxyOn         = false
 local antiRagdollSaved = false
 local infJumpSaved     = false
+local autoStealSaved   = false
 
 local function saveConfig()
     pcall(function()
@@ -251,6 +246,8 @@ local function saveConfig()
             Galaxy      = galaxyOn,
             AntiRagdoll = antiRagdollOn,
             InfJump     = infJumpOn,
+            AutoSteal   = autoStealActive,
+            StealRadius = AUTO_STEAL_PROX_RADIUS,
         }))
     end)
 end
@@ -259,10 +256,12 @@ local function loadConfig()
     pcall(function()
         if isfile and isfile(CONFIG_FILE) then
             local data = HttpService:JSONDecode(readfile(CONFIG_FILE))
-            if data.DarkMode    ~= nil then darkOn           = data.DarkMode    end
-            if data.Galaxy      ~= nil then galaxyOn         = data.Galaxy      end
-            if data.AntiRagdoll ~= nil then antiRagdollSaved = data.AntiRagdoll end
-            if data.InfJump     ~= nil then infJumpSaved     = data.InfJump     end
+            if data.DarkMode    ~= nil then darkOn                = data.DarkMode    end
+            if data.Galaxy      ~= nil then galaxyOn              = data.Galaxy      end
+            if data.AntiRagdoll ~= nil then antiRagdollSaved      = data.AntiRagdoll end
+            if data.InfJump     ~= nil then infJumpSaved          = data.InfJump     end
+            if data.AutoSteal   ~= nil then autoStealSaved        = data.AutoSteal   end
+            if data.StealRadius ~= nil then AUTO_STEAL_PROX_RADIUS = data.StealRadius end
         end
     end)
 end
@@ -270,27 +269,27 @@ end
 loadConfig()
 
 -- ══════════════════════════════════════════
--- COLORES — paleta azul índigo de la imagen
+-- COLORES — paleta azul índigo
 -- ══════════════════════════════════════════
-local NavyDark    = Color3.fromRGB(30,  35,  65)   -- fondo más oscuro
-local IndigoDark  = Color3.fromRGB(45,  48,  90)   -- fondo medio
-local IndigoMid   = Color3.fromRGB(75,  75, 130)   -- acento / header line
-local SlatBlue    = Color3.fromRGB(95,  95, 115)   -- botón acento
-local White       = Color3.fromRGB(255, 255, 255)
-local KnobOff     = Color3.fromRGB(80,  85, 120)
-local KnobOn      = Color3.fromRGB(120, 130, 200)  -- toggle encendido azul
-local GalaxyKnobOn = Color3.fromRGB(130, 110, 210) -- galaxy on morado-azul
-local RagKnobOn   = Color3.fromRGB(100, 200, 180)  -- anti ragdoll on
-local JumpKnobOn  = Color3.fromRGB(100, 180, 240)  -- inf jump on
+local NavyDark     = Color3.fromRGB(30,  35,  65)
+local IndigoDark   = Color3.fromRGB(45,  48,  90)
+local IndigoMid    = Color3.fromRGB(75,  75, 130)
+local White        = Color3.fromRGB(255, 255, 255)
+local KnobOff      = Color3.fromRGB(80,  85, 120)
+local KnobOn       = Color3.fromRGB(120, 130, 200)
+local GalaxyKnobOn = Color3.fromRGB(130, 110, 210)
+local RagKnobOn    = Color3.fromRGB(100, 200, 180)
+local JumpKnobOn   = Color3.fromRGB(100, 180, 240)
+local StealKnobOn  = Color3.fromRGB(255, 170,  60)
 
 if PlayerGui:FindFirstChild("KmoneyHub") then
     PlayerGui:FindFirstChild("KmoneyHub"):Destroy()
 end
 
 -- ══════════════════════════════════════════
--- GUI  (500 x 420)
+-- GUI  (500 x 490)
 -- ══════════════════════════════════════════
-local GUI_W, GUI_H = 500, 420
+local GUI_W, GUI_H = 500, 490
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KmoneyHub"
@@ -364,11 +363,11 @@ CloseBtn.Parent                 = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
 
 local Content = Instance.new("Frame")
-Content.Size                 = UDim2.new(1, -24, 1, -118)
-Content.Position             = UDim2.new(0, 12, 0, 60)
+Content.Size                   = UDim2.new(1, -24, 1, -118)
+Content.Position               = UDim2.new(0, 12, 0, 60)
 Content.BackgroundTransparency = 1
-Content.ZIndex               = 3
-Content.Parent               = Main
+Content.ZIndex                 = 3
+Content.Parent                 = Main
 
 -- ══════════════════════════════════════════
 -- TOGGLE HELPER
@@ -570,6 +569,288 @@ B4.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
+-- TOGGLE: AUTO STEAL  (yPos 248)
+-- ══════════════════════════════════════════
+local B5, K5 = makeToggle("Auto Steal", 248)
+
+-- Barra de progreso (pegada bajo el hub)
+local progressBarBg = Instance.new("Frame")
+progressBarBg.Size                   = UDim2.new(0, GUI_W - 24, 0, 10)
+progressBarBg.Position               = UDim2.new(0, 12, 1, 8)
+progressBarBg.BackgroundColor3       = NavyDark
+progressBarBg.BackgroundTransparency = 0.15
+progressBarBg.Visible                = false
+progressBarBg.ZIndex                 = 10
+progressBarBg.Parent                 = Main
+Instance.new("UICorner", progressBarBg).CornerRadius = UDim.new(0, 8)
+local pbStroke = Instance.new("UIStroke", progressBarBg)
+pbStroke.Color = IndigoMid; pbStroke.Thickness = 1; pbStroke.Transparency = 0.3
+
+local progressFill = Instance.new("Frame")
+progressFill.Size             = UDim2.new(0, 0, 1, 0)
+progressFill.BackgroundColor3 = StealKnobOn
+progressFill.BorderSizePixel  = 0
+progressFill.ZIndex           = 11
+progressFill.Parent           = progressBarBg
+Instance.new("UICorner", progressFill).CornerRadius = UDim.new(0, 8)
+
+local percentLabel = Instance.new("TextLabel")
+percentLabel.Size                   = UDim2.new(1, 0, 1, 0)
+percentLabel.BackgroundTransparency = 1
+percentLabel.Font                   = Enum.Font.GothamBold
+percentLabel.TextSize               = 9
+percentLabel.TextColor3             = White
+percentLabel.Text                   = "0%"
+percentLabel.ZIndex                 = 12
+percentLabel.Parent                 = progressBarBg
+
+local function animateProgressBar()
+    task.spawn(function()
+        progressFill.Size = UDim2.new(0, 0, 1, 0)
+        percentLabel.Text = "0%"
+        for i = 1, 10 do
+            local pct = i / 10
+            progressFill.Size = UDim2.new(pct, 0, 1, 0)
+            percentLabel.Text = math.floor(pct * 100) .. "%"
+            task.wait(0.015)
+        end
+        task.wait(0.2)
+        progressFill.Size = UDim2.new(0, 0, 1, 0)
+        percentLabel.Text = "0%"
+    end)
+end
+
+-- Radio visual (círculo neón en el suelo)
+local stealCirclePart = nil
+local stealCircleConn = nil
+
+local function hideStealCircle()
+    if stealCirclePart then stealCirclePart:Destroy(); stealCirclePart = nil end
+    if stealCircleConn then stealCircleConn:Disconnect(); stealCircleConn = nil end
+end
+
+local function showStealCircle(radius)
+    if stealCirclePart then stealCirclePart.Size = Vector3.new(0.05, radius*2, radius*2); return end
+    stealCirclePart             = Instance.new("Part")
+    stealCirclePart.Name        = "KmoneyStealCircle"
+    stealCirclePart.Anchored    = true
+    stealCirclePart.CanCollide  = false
+    stealCirclePart.Transparency = 0.65
+    stealCirclePart.Material    = Enum.Material.Neon
+    stealCirclePart.Color       = StealKnobOn
+    stealCirclePart.Shape       = Enum.PartType.Cylinder
+    stealCirclePart.Size        = Vector3.new(0.05, radius*2, radius*2)
+    stealCirclePart.Parent      = workspace
+    if stealCircleConn then stealCircleConn:Disconnect() end
+    stealCircleConn = RunService.Heartbeat:Connect(function()
+        if not autoStealActive then hideStealCircle(); return end
+        if stealCirclePart and me.Character then
+            local root = me.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                stealCirclePart.CFrame =
+                    CFrame.new(root.Position + Vector3.new(0, -2.5, 0))
+                    * CFrame.Angles(0, 0, math.rad(90))
+            end
+        end
+    end)
+end
+
+-- Lógica interna Auto Steal
+local autoStealStealConnection = nil
+local autoStealAnimalsCache    = {}
+local autoStealPromptCache     = {}
+local autoStealInternalCache   = {}
+local autoStealIsStealing      = false
+local autoStealScannerStarted  = false
+
+local animalsDataAS = {}
+pcall(function()
+    animalsDataAS = require(ReplicatedStorage:WaitForChild("Datas", 5):WaitForChild("Animals", 5))
+end)
+
+local function autoSteal_getHRP()
+    local char = me.Character; if not char then return nil end
+    return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso")
+end
+
+local function autoSteal_isMyBase(plotName)
+    local plots = workspace:FindFirstChild("Plots")
+    local plot  = plots and plots:FindFirstChild(plotName)
+    if not plot then return false end
+    local sign = plot:FindFirstChild("PlotSign")
+    if sign then
+        local yourBase = sign:FindFirstChild("YourBase")
+        if yourBase and yourBase:IsA("BillboardGui") then
+            return yourBase.Enabled == true
+        end
+    end
+    return false
+end
+
+local function autoSteal_scanPlot(plot)
+    if not plot or not plot:IsA("Model") then return end
+    if autoSteal_isMyBase(plot.Name) then return end
+    local podiums = plot:FindFirstChild("AnimalPodiums")
+    if not podiums then return end
+    for _, podium in ipairs(podiums:GetChildren()) do
+        if podium:IsA("Model") and podium:FindFirstChild("Base") then
+            local animalName = "Unknown"
+            local spawn = podium.Base:FindFirstChild("Spawn")
+            if spawn then
+                for _, child in ipairs(spawn:GetChildren()) do
+                    if child:IsA("Model") and child.Name ~= "PromptAttachment" then
+                        animalName = child.Name
+                        local info = animalsDataAS[animalName]
+                        if info and info.DisplayName then animalName = info.DisplayName end
+                        break
+                    end
+                end
+            end
+            table.insert(autoStealAnimalsCache, {
+                name          = animalName,
+                plot          = plot.Name,
+                slot          = podium.Name,
+                worldPosition = podium:GetPivot().Position,
+                uid           = plot.Name .. "_" .. podium.Name,
+            })
+        end
+    end
+end
+
+local function autoSteal_initScanner()
+    if autoStealScannerStarted then return end
+    autoStealScannerStarted = true
+    task.spawn(function()
+        task.wait(2)
+        local plots = workspace:WaitForChild("Plots", 10)
+        if not plots then return end
+        for _, plot in ipairs(plots:GetChildren()) do
+            if plot:IsA("Model") then autoSteal_scanPlot(plot) end
+        end
+        plots.ChildAdded:Connect(function(plot)
+            if plot:IsA("Model") then task.wait(0.5); autoSteal_scanPlot(plot) end
+        end)
+        task.spawn(function()
+            while task.wait(5) do
+                autoStealAnimalsCache = {}
+                for _, plot in ipairs(plots:GetChildren()) do
+                    if plot:IsA("Model") then autoSteal_scanPlot(plot) end
+                end
+            end
+        end)
+    end)
+end
+
+local function autoSteal_findPrompt(animalData)
+    if not animalData then return nil end
+    local cached = autoStealPromptCache[animalData.uid]
+    if cached and cached.Parent then return cached end
+    local plots   = workspace:FindFirstChild("Plots")
+    local plot    = plots and plots:FindFirstChild(animalData.plot);  if not plot    then return nil end
+    local podiums = plot:FindFirstChild("AnimalPodiums");             if not podiums then return nil end
+    local podium  = podiums:FindFirstChild(animalData.slot);          if not podium  then return nil end
+    local base    = podium:FindFirstChild("Base");                    if not base    then return nil end
+    local spawn   = base:FindFirstChild("Spawn");                     if not spawn   then return nil end
+    local attach  = spawn:FindFirstChild("PromptAttachment");         if not attach  then return nil end
+    for _, p in ipairs(attach:GetChildren()) do
+        if p:IsA("ProximityPrompt") then
+            autoStealPromptCache[animalData.uid] = p
+            return p
+        end
+    end
+    return nil
+end
+
+local function autoSteal_execute(prompt)
+    local data = autoStealInternalCache[prompt]
+    if data and not data.ready then return false end
+    autoStealInternalCache[prompt] = { ready = false }
+    autoStealIsStealing = true
+    task.spawn(function()
+        pcall(function() fireproximityprompt(prompt) end)
+        task.wait(0.15)
+        autoStealInternalCache[prompt].ready = true
+        autoStealIsStealing = false
+    end)
+    return true
+end
+
+local function autoSteal_getNearest()
+    local hrp = autoSteal_getHRP(); if not hrp then return nil end
+    local nearest, minDist = nil, math.huge
+    for _, animalData in ipairs(autoStealAnimalsCache) do
+        if autoSteal_isMyBase(animalData.plot) then continue end
+        if animalData.worldPosition then
+            local dist = (hrp.Position - animalData.worldPosition).Magnitude
+            if dist < minDist then minDist = dist; nearest = animalData end
+        end
+    end
+    return nearest
+end
+
+local function startAutoStealLoop()
+    if autoStealStealConnection then autoStealStealConnection:Disconnect() end
+    autoStealStealConnection = RunService.Heartbeat:Connect(function()
+        if not autoStealActive then return end
+        if autoStealIsStealing then return end
+        local target = autoSteal_getNearest()
+        if not target or not target.worldPosition then return end
+        local hrp = autoSteal_getHRP(); if not hrp then return end
+        if (hrp.Position - target.worldPosition).Magnitude > AUTO_STEAL_PROX_RADIUS then return end
+        local prompt = autoStealPromptCache[target.uid]
+        if not prompt or not prompt.Parent then prompt = autoSteal_findPrompt(target) end
+        if prompt then
+            if autoSteal_execute(prompt) then task.spawn(animateProgressBar) end
+        end
+    end)
+end
+
+local function stopAutoStealLoop()
+    if autoStealStealConnection then autoStealStealConnection:Disconnect(); autoStealStealConnection = nil end
+    autoStealIsStealing = false
+end
+
+local function enableAutoSteal()
+    autoStealActive = true
+    autoSteal_initScanner()
+    startAutoStealLoop()
+    showStealCircle(AUTO_STEAL_PROX_RADIUS)
+    progressBarBg.Visible = true
+end
+
+local function disableAutoSteal()
+    autoStealActive = false
+    stopAutoStealLoop()
+    hideStealCircle()
+    progressBarBg.Visible = false
+    progressFill.Size = UDim2.new(0, 0, 1, 0)
+    percentLabel.Text = "0%"
+end
+
+local function applyAutoStealState()
+    if autoStealActive then
+        enableAutoSteal()
+        K5.Position = UDim2.new(1,-21,0.5,-9); K5.BackgroundColor3 = StealKnobOn
+    else
+        K5.Position = UDim2.new(0,3,0.5,-9);   K5.BackgroundColor3 = KnobOff
+    end
+end
+
+autoStealActive = autoStealSaved
+applyAutoStealState()
+
+B5.MouseButton1Click:Connect(function()
+    autoStealActive = not autoStealActive
+    if autoStealActive then
+        enableAutoSteal()
+        TweenService:Create(K5, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=StealKnobOn}):Play()
+    else
+        disableAutoSteal()
+        TweenService:Create(K5, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ══════════════════════════════════════════
 -- SAVE CONFIG BUTTON (fijo abajo)
 -- ══════════════════════════════════════════
 local SaveBtn = Instance.new("TextButton")
@@ -606,6 +887,7 @@ end)
 CloseBtn.MouseButton1Click:Connect(function()
     disableGalaxySkyBright()
     toggleAntiRagdoll(false)
+    disableAutoSteal()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size     = UDim2.new(0, 0, 0, 0),
         Position = UDim2.new(0.5, 0, 0.5, 0),
