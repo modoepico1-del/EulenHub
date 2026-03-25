@@ -479,16 +479,20 @@ local B5, K5, AutoStealRow = makeToggle("Auto Steal  ⚙️", autoRowY(1))
 -- MINI PANEL AUTO STEAL (right-click)
 -- ══════════════════════════════════════════
 local miniPanelOpen = false
+-- El mini panel se coloca fuera del hub, a la izquierda, alineado verticalmente
+-- con la fila de Auto Steal. Se pone como hijo de ScreenGui para salir del clip del Main.
 local MiniPanel = Instance.new("Frame")
 MiniPanel.Name                 = "MiniPanel"
 MiniPanel.Size                 = UDim2.new(0, 170, 0, 58)
-MiniPanel.Position             = UDim2.new(0, 8, 0, autoRowY(1) + CONTENT_Y + ROW_H + 2)
+-- X: borde izquierdo del hub menos el ancho del panel menos 8px de margen
+-- Y: misma posición vertical que la fila Auto Steal dentro del hub
+MiniPanel.Position             = UDim2.new(0.5, -GUI_W/2 - 170 - 8, 0.5, -GUI_H/2 + autoRowY(1) + CONTENT_Y)
 MiniPanel.BackgroundColor3     = IndigoDark
 MiniPanel.BackgroundTransparency = 0.08
 MiniPanel.BorderSizePixel      = 0
 MiniPanel.Visible              = false
 MiniPanel.ZIndex               = 20
-MiniPanel.Parent               = Main
+MiniPanel.Parent               = ScreenGui   -- ← hijo de ScreenGui, no de Main
 Instance.new("UICorner", MiniPanel).CornerRadius = UDim.new(0, 8)
 local MiniStroke = Instance.new("UIStroke", MiniPanel)
 MiniStroke.Color = ESP_HUB_BLUE; MiniStroke.Thickness = 1; MiniStroke.Transparency = 0.4
@@ -1155,7 +1159,10 @@ end)
 UserInputService.InputChanged:Connect(function(inp)
     if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
         local d = inp.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+d.X, startPos.Y.Scale, startPos.Y.Offset+d.Y)
+        local newX = startPos.X.Offset + d.X
+        local newY = startPos.Y.Offset + d.Y
+        Main.Position = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
+        MiniPanel.Position = UDim2.new(startPos.X.Scale, newX - 170 - 8, startPos.Y.Scale, newY + autoRowY(1) + CONTENT_Y)
     end
 end)
 
