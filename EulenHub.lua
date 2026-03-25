@@ -1,4 +1,4 @@
--- KMONEY HUB - 500x490
+-- KMONEY HUB - 500x550
 
 local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer       = Players.LocalPlayer
 local PlayerGui         = LocalPlayer:WaitForChild("PlayerGui")
 local me                = LocalPlayer
+local RS                = RunService
 
 local CONFIG_FILE = "kmoney_config.json"
 
@@ -137,10 +138,10 @@ end
 -- ══════════════════════════════════════════
 -- ANTI RAGDOLL
 -- ══════════════════════════════════════════
-local antiRagdollOn   = false
-local antiRagdollMode = nil
+local antiRagdollOn      = false
+local antiRagdollMode    = nil
 local ragdollConnections = {}
-local cachedCharData  = {}
+local cachedCharData     = {}
 
 local function cacheCharacterData()
     local char = me.Character; if not char then return false end
@@ -148,12 +149,8 @@ local function cacheCharacterData()
     local root = char:FindFirstChild("HumanoidRootPart")
     if not hum or not root then return false end
     cachedCharData = {
-        character         = char,
-        humanoid          = hum,
-        root              = root,
-        originalWalkSpeed = hum.WalkSpeed,
-        originalJumpPower = hum.JumpPower,
-        isFrozen          = false,
+        character = char, humanoid = hum, root = root,
+        originalWalkSpeed = hum.WalkSpeed, originalJumpPower = hum.JumpPower, isFrozen = false,
     }
     return true
 end
@@ -226,8 +223,10 @@ end
 -- ══════════════════════════════════════════
 -- ESTADOS
 -- ══════════════════════════════════════════
-local infJumpOn           = false
-local autoStealActive     = false
+local infJumpOn              = false
+local autoStealActive        = false
+local unwalkOn               = false
+local unwalkConn             = nil
 local AUTO_STEAL_PROX_RADIUS = 7
 
 -- ══════════════════════════════════════════
@@ -238,6 +237,7 @@ local galaxyOn         = false
 local antiRagdollSaved = false
 local infJumpSaved     = false
 local autoStealSaved   = false
+local unwalkSaved      = false
 
 local function saveConfig()
     pcall(function()
@@ -248,6 +248,7 @@ local function saveConfig()
             InfJump     = infJumpOn,
             AutoSteal   = autoStealActive,
             StealRadius = AUTO_STEAL_PROX_RADIUS,
+            Unwalk      = unwalkOn,
         }))
     end)
 end
@@ -256,12 +257,13 @@ local function loadConfig()
     pcall(function()
         if isfile and isfile(CONFIG_FILE) then
             local data = HttpService:JSONDecode(readfile(CONFIG_FILE))
-            if data.DarkMode    ~= nil then darkOn                = data.DarkMode    end
-            if data.Galaxy      ~= nil then galaxyOn              = data.Galaxy      end
-            if data.AntiRagdoll ~= nil then antiRagdollSaved      = data.AntiRagdoll end
-            if data.InfJump     ~= nil then infJumpSaved          = data.InfJump     end
-            if data.AutoSteal   ~= nil then autoStealSaved        = data.AutoSteal   end
+            if data.DarkMode    ~= nil then darkOn                 = data.DarkMode    end
+            if data.Galaxy      ~= nil then galaxyOn               = data.Galaxy      end
+            if data.AntiRagdoll ~= nil then antiRagdollSaved       = data.AntiRagdoll end
+            if data.InfJump     ~= nil then infJumpSaved           = data.InfJump     end
+            if data.AutoSteal   ~= nil then autoStealSaved         = data.AutoSteal   end
             if data.StealRadius ~= nil then AUTO_STEAL_PROX_RADIUS = data.StealRadius end
+            if data.Unwalk      ~= nil then unwalkSaved            = data.Unwalk      end
         end
     end)
 end
@@ -269,27 +271,23 @@ end
 loadConfig()
 
 -- ══════════════════════════════════════════
--- COLORES — paleta azul índigo
+-- COLORES
 -- ══════════════════════════════════════════
-local NavyDark     = Color3.fromRGB(30,  35,  65)
-local IndigoDark   = Color3.fromRGB(45,  48,  90)
-local IndigoMid    = Color3.fromRGB(75,  75, 130)
-local White        = Color3.fromRGB(255, 255, 255)
-local KnobOff      = Color3.fromRGB(80,  85, 120)
-local KnobOn       = Color3.fromRGB(120, 130, 200)
-local GalaxyKnobOn = Color3.fromRGB(120, 130, 200)
-local RagKnobOn    = Color3.fromRGB(120, 130, 200)
-local JumpKnobOn   = Color3.fromRGB(120, 130, 200)
-local StealKnobOn  = Color3.fromRGB(120, 130, 200)
+local NavyDark  = Color3.fromRGB(30,  35,  65)
+local IndigoDark = Color3.fromRGB(45,  48,  90)
+local IndigoMid  = Color3.fromRGB(75,  75, 130)
+local White      = Color3.fromRGB(255, 255, 255)
+local KnobOff    = Color3.fromRGB(80,  85, 120)
+local KnobOn     = Color3.fromRGB(120, 130, 200)
 
 if PlayerGui:FindFirstChild("KmoneyHub") then
     PlayerGui:FindFirstChild("KmoneyHub"):Destroy()
 end
 
 -- ══════════════════════════════════════════
--- GUI  (500 x 490)
+-- GUI  (500 x 550)
 -- ══════════════════════════════════════════
-local GUI_W, GUI_H = 500, 490
+local GUI_W, GUI_H = 500, 550
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KmoneyHub"
@@ -475,7 +473,7 @@ local B2, K2 = makeToggle("Galaxy", 80)
 local function applyGalaxyState()
     if galaxyOn then
         config.GalaxySkyBright = true; enableGalaxySkyBright()
-        K2.Position = UDim2.new(1,-21,0.5,-9); K2.BackgroundColor3 = GalaxyKnobOn
+        K2.Position = UDim2.new(1,-21,0.5,-9); K2.BackgroundColor3 = KnobOn
     else
         config.GalaxySkyBright = false; disableGalaxySkyBright()
         K2.Position = UDim2.new(0,3,0.5,-9);   K2.BackgroundColor3 = KnobOff
@@ -488,7 +486,7 @@ B2.MouseButton1Click:Connect(function()
     config.GalaxySkyBright = galaxyOn
     if galaxyOn then
         enableGalaxySkyBright()
-        TweenService:Create(K2, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=GalaxyKnobOn}):Play()
+        TweenService:Create(K2, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
     else
         disableGalaxySkyBright()
         TweenService:Create(K2, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
@@ -503,7 +501,7 @@ local B3, K3 = makeToggle("Anti Ragdoll", 136)
 local function applyAntiRagdollState()
     if antiRagdollOn then
         toggleAntiRagdoll(true)
-        K3.Position = UDim2.new(1,-21,0.5,-9); K3.BackgroundColor3 = RagKnobOn
+        K3.Position = UDim2.new(1,-21,0.5,-9); K3.BackgroundColor3 = KnobOn
     else
         toggleAntiRagdoll(false)
         K3.Position = UDim2.new(0,3,0.5,-9);   K3.BackgroundColor3 = KnobOff
@@ -517,7 +515,7 @@ B3.MouseButton1Click:Connect(function()
     antiRagdollOn = not antiRagdollOn
     if antiRagdollOn then
         toggleAntiRagdoll(true)
-        TweenService:Create(K3, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=RagKnobOn}):Play()
+        TweenService:Create(K3, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
     else
         toggleAntiRagdoll(false)
         TweenService:Create(K3, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
@@ -550,7 +548,7 @@ end)
 
 local function applyInfJumpState()
     if infJumpOn then
-        K4.Position = UDim2.new(1,-21,0.5,-9); K4.BackgroundColor3 = JumpKnobOn
+        K4.Position = UDim2.new(1,-21,0.5,-9); K4.BackgroundColor3 = KnobOn
     else
         K4.Position = UDim2.new(0,3,0.5,-9);   K4.BackgroundColor3 = KnobOff
     end
@@ -562,7 +560,7 @@ applyInfJumpState()
 B4.MouseButton1Click:Connect(function()
     infJumpOn = not infJumpOn
     if infJumpOn then
-        TweenService:Create(K4, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=JumpKnobOn}):Play()
+        TweenService:Create(K4, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
     else
         TweenService:Create(K4, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
     end
@@ -573,7 +571,7 @@ end)
 -- ══════════════════════════════════════════
 local B5, K5 = makeToggle("Auto Steal", 248)
 
--- Barra de progreso (pegada bajo el hub)
+-- Barra de progreso
 local progressBarBg = Instance.new("Frame")
 progressBarBg.Size                   = UDim2.new(0, GUI_W - 24, 0, 10)
 progressBarBg.Position               = UDim2.new(0, 12, 1, 8)
@@ -588,7 +586,7 @@ pbStroke.Color = IndigoMid; pbStroke.Thickness = 1; pbStroke.Transparency = 0.3
 
 local progressFill = Instance.new("Frame")
 progressFill.Size             = UDim2.new(0, 0, 1, 0)
-progressFill.BackgroundColor3 = StealKnobOn
+progressFill.BackgroundColor3 = KnobOn
 progressFill.BorderSizePixel  = 0
 progressFill.ZIndex           = 11
 progressFill.Parent           = progressBarBg
@@ -620,10 +618,12 @@ local function animateProgressBar()
     end)
 end
 
--- Radio visual (círculo neón en el suelo)
+-- ══════════════════════════════════════════
+-- CIRCULO BLANCO (solo borde, forma cilindro = circulo en el suelo)
+-- ══════════════════════════════════════════
 local stealCirclePart = nil
-local stealCircleConn = nil
 local stealCircleSel  = nil
+local stealCircleConn = nil
 
 local function hideStealCircle()
     if stealCircleSel  then stealCircleSel:Destroy();  stealCircleSel  = nil end
@@ -632,25 +632,28 @@ local function hideStealCircle()
 end
 
 local function showStealCircle(radius)
-    if stealCirclePart then stealCirclePart.Size = Vector3.new(0.05, radius*2, radius*2); return end
-    stealCirclePart             = Instance.new("Part")
-    stealCirclePart.Name        = "KmoneyStealCircle"
-    stealCirclePart.Anchored    = true
-    stealCirclePart.CanCollide  = false
-    stealCirclePart.Transparency = 1
-    stealCirclePart.Material    = Enum.Material.Neon
-    stealCirclePart.Color       = IndigoMid
-    stealCirclePart.Shape       = Enum.PartType.Cylinder
-    stealCirclePart.Size        = Vector3.new(0.05, radius*2, radius*2)
-    stealCirclePart.Parent      = workspace
-    stealCircleSel              = Instance.new("SelectionBox")
-    stealCircleSel.Adornee      = stealCirclePart
-    stealCircleSel.Color3       = IndigoMid
-    stealCircleSel.LineThickness = 0.04
-    stealCircleSel.SurfaceTransparency = 1
-    stealCircleSel.SurfaceColor3 = IndigoMid
-    stealCircleSel.Parent       = workspace
-    if stealCircleConn then stealCircleConn:Disconnect() end
+    if stealCirclePart then
+        stealCirclePart.Size = Vector3.new(0.05, radius*2, radius*2)
+        return
+    end
+    stealCirclePart              = Instance.new("Part")
+    stealCirclePart.Name         = "KmoneyStealCircle"
+    stealCirclePart.Anchored     = true
+    stealCirclePart.CanCollide   = false
+    stealCirclePart.Transparency = 1                        -- sin relleno
+    stealCirclePart.Material     = Enum.Material.Plastic
+    stealCirclePart.Shape        = Enum.PartType.Cylinder
+    stealCirclePart.Size         = Vector3.new(0.05, radius*2, radius*2)
+    stealCirclePart.Parent       = workspace
+
+    stealCircleSel                    = Instance.new("SelectionBox")
+    stealCircleSel.Adornee            = stealCirclePart
+    stealCircleSel.Color3             = Color3.fromRGB(255, 255, 255) -- borde blanco
+    stealCircleSel.LineThickness      = 0.05
+    stealCircleSel.SurfaceTransparency = 1                 -- sin relleno de cara
+    stealCircleSel.SurfaceColor3      = Color3.fromRGB(255, 255, 255)
+    stealCircleSel.Parent             = workspace
+
     stealCircleConn = RunService.Heartbeat:Connect(function()
         if not autoStealActive then hideStealCircle(); return end
         if stealCirclePart and me.Character then
@@ -664,7 +667,9 @@ local function showStealCircle(radius)
     end)
 end
 
--- Lógica interna Auto Steal
+-- ══════════════════════════════════════════
+-- AUTO STEAL LOGICA
+-- ══════════════════════════════════════════
 local autoStealStealConnection = nil
 local autoStealAnimalsCache    = {}
 local autoStealPromptCache     = {}
@@ -770,10 +775,7 @@ local function autoSteal_findPrompt(animalData)
     return nil
 end
 
--- ══════════════════════════════════════════
--- FIX: autoSteal_execute sin task.spawn
--- dispara fireproximityprompt inmediato
--- ══════════════════════════════════════════
+-- FIX: sin task.spawn, disparo inmediato
 local function autoSteal_execute(prompt)
     local data = autoStealInternalCache[prompt]
     if data and not data.ready then return false end
@@ -844,7 +846,7 @@ end
 local function applyAutoStealState()
     if autoStealActive then
         enableAutoSteal()
-        K5.Position = UDim2.new(1,-21,0.5,-9); K5.BackgroundColor3 = StealKnobOn
+        K5.Position = UDim2.new(1,-21,0.5,-9); K5.BackgroundColor3 = KnobOn
     else
         K5.Position = UDim2.new(0,3,0.5,-9);   K5.BackgroundColor3 = KnobOff
     end
@@ -857,7 +859,7 @@ B5.MouseButton1Click:Connect(function()
     autoStealActive = not autoStealActive
     if autoStealActive then
         enableAutoSteal()
-        TweenService:Create(K5, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=StealKnobOn}):Play()
+        TweenService:Create(K5, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
     else
         disableAutoSteal()
         TweenService:Create(K5, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
@@ -865,7 +867,55 @@ B5.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- SAVE CONFIG BUTTON (fijo abajo)
+-- TOGGLE: UNWALK  (yPos 304)
+-- ══════════════════════════════════════════
+local B6, K6 = makeToggle("Unwalk", 304)
+
+local function enableUnwalk()
+    local char = me.Character; if not char then return end
+    local hum  = char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local anim = hum:FindFirstChildOfClass("Animator"); if not anim then return end
+    for _, t in ipairs(anim:GetPlayingAnimationTracks()) do t:Stop(0) end
+    if unwalkConn then unwalkConn:Disconnect() end
+    unwalkConn = RS.Heartbeat:Connect(function()
+        if not unwalkOn then unwalkConn:Disconnect(); unwalkConn = nil; return end
+        local c  = me.Character; if not c then return end
+        local h  = c:FindFirstChildOfClass("Humanoid"); if not h then return end
+        local an = h:FindFirstChildOfClass("Animator"); if not an then return end
+        for _, t in ipairs(an:GetPlayingAnimationTracks()) do t:Stop(0) end
+    end)
+end
+
+local function disableUnwalk()
+    if unwalkConn then unwalkConn:Disconnect(); unwalkConn = nil end
+end
+
+local function applyUnwalkState()
+    if unwalkOn then
+        enableUnwalk()
+        K6.Position = UDim2.new(1,-21,0.5,-9); K6.BackgroundColor3 = KnobOn
+    else
+        disableUnwalk()
+        K6.Position = UDim2.new(0,3,0.5,-9);   K6.BackgroundColor3 = KnobOff
+    end
+end
+
+unwalkOn = unwalkSaved
+applyUnwalkState()
+
+B6.MouseButton1Click:Connect(function()
+    unwalkOn = not unwalkOn
+    if unwalkOn then
+        enableUnwalk()
+        TweenService:Create(K6, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
+    else
+        disableUnwalk()
+        TweenService:Create(K6, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ══════════════════════════════════════════
+-- SAVE CONFIG BUTTON
 -- ══════════════════════════════════════════
 local SaveBtn = Instance.new("TextButton")
 SaveBtn.Size                   = UDim2.new(1, -24, 0, 36)
@@ -902,6 +952,7 @@ CloseBtn.MouseButton1Click:Connect(function()
     disableGalaxySkyBright()
     toggleAntiRagdoll(false)
     disableAutoSteal()
+    disableUnwalk()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size     = UDim2.new(0, 0, 0, 0),
         Position = UDim2.new(0.5, 0, 0.5, 0),
