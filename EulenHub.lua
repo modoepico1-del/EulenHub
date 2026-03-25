@@ -486,7 +486,7 @@ MiniPanel.Name                 = "MiniPanel"
 MiniPanel.Size                 = UDim2.new(0, 170, 0, 58)
 -- X: borde izquierdo del hub menos el ancho del panel menos 8px de margen
 -- Y: misma posición vertical que la fila Auto Steal dentro del hub
-MiniPanel.Position             = UDim2.new(0.5, -GUI_W/2 - 170 - 8, 0.5, -GUI_H/2 + autoRowY(1) + CONTENT_Y)
+MiniPanel.Position             = UDim2.new(0.5, -(GUI_W/2) - 170 - 8, 0.5, -(GUI_H/2) + autoRowY(1) + CONTENT_Y)
 MiniPanel.BackgroundColor3     = IndigoDark
 MiniPanel.BackgroundTransparency = 0.08
 MiniPanel.BorderSizePixel      = 0
@@ -1147,10 +1147,13 @@ end)
 -- ══════════════════════════════════════════
 -- DRAG
 -- ══════════════════════════════════════════
-local dragging, dragStart, startPos = false, nil, nil
+local dragging, dragStart, startPos, miniStartPos = false, nil, nil, nil
 Header.InputBegan:Connect(function(inp)
     if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging=true; dragStart=inp.Position; startPos=Main.Position
+        dragging      = true
+        dragStart     = inp.Position
+        startPos      = Main.Position
+        miniStartPos  = MiniPanel.Position
     end
 end)
 UserInputService.InputEnded:Connect(function(inp)
@@ -1159,10 +1162,8 @@ end)
 UserInputService.InputChanged:Connect(function(inp)
     if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
         local d = inp.Position - dragStart
-        local newX = startPos.X.Offset + d.X
-        local newY = startPos.Y.Offset + d.Y
-        Main.Position = UDim2.new(startPos.X.Scale, newX, startPos.Y.Scale, newY)
-        MiniPanel.Position = UDim2.new(startPos.X.Scale, newX - 170 - 8, startPos.Y.Scale, newY + autoRowY(1) + CONTENT_Y)
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        MiniPanel.Position = UDim2.new(miniStartPos.X.Scale, miniStartPos.X.Offset + d.X, miniStartPos.Y.Scale, miniStartPos.Y.Offset + d.Y)
     end
 end)
 
