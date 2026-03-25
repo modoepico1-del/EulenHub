@@ -296,7 +296,7 @@ end
 -- LAYOUT
 -- ══════════════════════════════════════════
 local GUI_W    = 300
-local GUI_H    = 340
+local GUI_H    = 360
 local ROW_H    = 30
 local ROW_GAP  = 3
 local SEC_H    = 14
@@ -456,23 +456,32 @@ end
 
 -- ══════════════════════════════════════════
 -- POSICIONES
+-- VISUAL : 2 filas (Dark Mode, Galaxy)
+-- MISC   : 4 filas (Anti Ragdoll, Inf Jump, Unwalk, ESP)
+-- AUTO   : 1 fila  (Auto Steal)
 -- ══════════════════════════════════════════
-local function miscRowY(i) return SEC_H + (i-1)*(ROW_H + ROW_GAP) end
-local AUTO_BASE  = SEC_H + 6*(ROW_H + ROW_GAP) + 6
+local GAP_SEC = 6
+
+local function visRowY(i)  return SEC_H + (i-1)*(ROW_H + ROW_GAP) end
+local MISC_BASE = SEC_H + 2*(ROW_H + ROW_GAP) + GAP_SEC
+local function miscRowY(i) return MISC_BASE + SEC_H + (i-1)*(ROW_H + ROW_GAP) end
+local AUTO_BASE = MISC_BASE + SEC_H + 4*(ROW_H + ROW_GAP) + GAP_SEC
 local function autoRowY(i) return AUTO_BASE + SEC_H + (i-1)*(ROW_H + ROW_GAP) end
 
+-- ── Sección VISUAL ──
+makeSectionLabel("— VISUAL —", 0)
+local B1, K1 = makeToggle("Dark Mode", visRowY(1))
+local B2, K2 = makeToggle("Galaxy",    visRowY(2))
+
 -- ── Sección MISC ──
-makeSectionLabel("— MISC —", 0)
-local B1, K1 = makeToggle("Dark Mode",    miscRowY(1))
-local B2, K2 = makeToggle("Galaxy",       miscRowY(2))
-local B3, K3 = makeToggle("Anti Ragdoll", miscRowY(3))
-local B4, K4 = makeToggle("Inf Jump",     miscRowY(4))
-local B6, K6 = makeToggle("Unwalk",       miscRowY(5))
-local B7, K7 = makeToggle("ESP",          miscRowY(6))
+makeSectionLabel("— MISC —", MISC_BASE)
+local B3, K3 = makeToggle("Anti Ragdoll", miscRowY(1))
+local B4, K4 = makeToggle("Inf Jump",     miscRowY(2))
+local B6, K6 = makeToggle("Unwalk",       miscRowY(3))
+local B7, K7 = makeToggle("ESP",          miscRowY(4))
 
 -- ── Sección AUTO ──
 makeSectionLabel("— AUTO —", AUTO_BASE)
--- Auto Steal con emoji ⚙️ y referencia al Row para right-click
 local B5, K5, AutoStealRow = makeToggle("Auto Steal  ⚙️", autoRowY(1))
 
 -- ══════════════════════════════════════════
@@ -486,7 +495,7 @@ MiniPanel.Name                 = "MiniPanel"
 MiniPanel.Size                 = UDim2.new(0, 170, 0, 58)
 -- X: borde izquierdo del hub menos el ancho del panel menos 8px de margen
 -- Y: misma posición vertical que la fila Auto Steal dentro del hub
-MiniPanel.Position             = UDim2.new(0.5, -(GUI_W/2) - 170 - 8, 0.5, -(GUI_H/2) + autoRowY(1) + CONTENT_Y)
+MiniPanel.Position             = UDim2.new(0.5, (GUI_W/2) + 8, 0.5, -(GUI_H/2) + autoRowY(1) + CONTENT_Y)
 MiniPanel.BackgroundColor3     = IndigoDark
 MiniPanel.BackgroundTransparency = 0.08
 MiniPanel.BorderSizePixel      = 0
