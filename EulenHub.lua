@@ -1,4 +1,4 @@
--- KMONEY HUB - 500x360
+-- KMONEY HUB - 500x420
 
 local Players          = game:GetService("Players")
 local TweenService     = game:GetService("TweenService")
@@ -232,11 +232,17 @@ local function toggleAntiRagdoll(enable)
 end
 
 -- ══════════════════════════════════════════
+-- INF JUMP STATE
+-- ══════════════════════════════════════════
+local infJumpOn = false
+
+-- ══════════════════════════════════════════
 -- SAVE CONFIG
 -- ══════════════════════════════════════════
-local darkOn        = false
-local galaxyOn      = false
+local darkOn           = false
+local galaxyOn         = false
 local antiRagdollSaved = false
+local infJumpSaved     = false
 
 local function saveConfig()
     pcall(function()
@@ -244,6 +250,7 @@ local function saveConfig()
             DarkMode    = darkOn,
             Galaxy      = galaxyOn,
             AntiRagdoll = antiRagdollOn,
+            InfJump     = infJumpOn,
         }))
     end)
 end
@@ -255,6 +262,7 @@ local function loadConfig()
             if data.DarkMode    ~= nil then darkOn           = data.DarkMode    end
             if data.Galaxy      ~= nil then galaxyOn         = data.Galaxy      end
             if data.AntiRagdoll ~= nil then antiRagdollSaved = data.AntiRagdoll end
+            if data.InfJump     ~= nil then infJumpSaved     = data.InfJump     end
         end
     end)
 end
@@ -262,15 +270,18 @@ end
 loadConfig()
 
 -- ══════════════════════════════════════════
--- COLORES (#DF6589 → #3C1053)
+-- COLORES — paleta azul índigo de la imagen
 -- ══════════════════════════════════════════
-local HotPink      = Color3.fromRGB(223, 101, 137)
-local DeepPlum     = Color3.fromRGB(60,  16,  83)
-local White        = Color3.fromRGB(255, 255, 255)
-local KnobOff      = Color3.fromRGB(180, 120, 160)
-local KnobOn       = Color3.fromRGB(223, 101, 137)
-local GalaxyKnobOn = Color3.fromRGB(170, 100, 255)
-local RagKnobOn    = Color3.fromRGB(100, 220, 180)
+local NavyDark    = Color3.fromRGB(30,  35,  65)   -- fondo más oscuro
+local IndigoDark  = Color3.fromRGB(45,  48,  90)   -- fondo medio
+local IndigoMid   = Color3.fromRGB(75,  75, 130)   -- acento / header line
+local SlatBlue    = Color3.fromRGB(95,  95, 115)   -- botón acento
+local White       = Color3.fromRGB(255, 255, 255)
+local KnobOff     = Color3.fromRGB(80,  85, 120)
+local KnobOn      = Color3.fromRGB(120, 130, 200)  -- toggle encendido azul
+local GalaxyKnobOn = Color3.fromRGB(130, 110, 210) -- galaxy on morado-azul
+local RagKnobOn   = Color3.fromRGB(100, 200, 180)  -- anti ragdoll on
+local JumpKnobOn  = Color3.fromRGB(100, 180, 240)  -- inf jump on
 
 if PlayerGui:FindFirstChild("KmoneyHub") then
     PlayerGui:FindFirstChild("KmoneyHub"):Destroy()
@@ -291,7 +302,7 @@ local Main = Instance.new("Frame")
 Main.Name             = "Main"
 Main.Size             = UDim2.new(0, GUI_W, 0, GUI_H)
 Main.Position         = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2)
-Main.BackgroundColor3 = DeepPlum
+Main.BackgroundColor3 = NavyDark
 Main.BorderSizePixel  = 0
 Main.ClipsDescendants = true
 Main.Parent           = ScreenGui
@@ -299,16 +310,16 @@ Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
 local BgGrad = Instance.new("UIGradient")
 BgGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.0, HotPink),
-    ColorSequenceKeypoint.new(1.0, DeepPlum),
+    ColorSequenceKeypoint.new(0.0, IndigoDark),
+    ColorSequenceKeypoint.new(1.0, NavyDark),
 })
 BgGrad.Rotation = 135
 BgGrad.Parent = Main
 
 local Header = Instance.new("Frame")
 Header.Size                   = UDim2.new(1, 0, 0, 52)
-Header.BackgroundColor3       = DeepPlum
-Header.BackgroundTransparency = 0.3
+Header.BackgroundColor3       = IndigoDark
+Header.BackgroundTransparency = 0.2
 Header.BorderSizePixel        = 0
 Header.ZIndex                 = 3
 Header.Parent                 = Main
@@ -317,8 +328,8 @@ Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 14)
 local HeaderLine = Instance.new("Frame")
 HeaderLine.Size                   = UDim2.new(1, 0, 0, 1.5)
 HeaderLine.Position               = UDim2.new(0, 0, 1, -1)
-HeaderLine.BackgroundColor3       = HotPink
-HeaderLine.BackgroundTransparency = 0.3
+HeaderLine.BackgroundColor3       = IndigoMid
+HeaderLine.BackgroundTransparency = 0.2
 HeaderLine.BorderSizePixel        = 0
 HeaderLine.ZIndex                 = 4
 HeaderLine.Parent                 = Header
@@ -335,13 +346,13 @@ Title.TextXAlignment         = Enum.TextXAlignment.Left
 Title.ZIndex                 = 5
 Title.Parent                 = Header
 local TitleStroke = Instance.new("UIStroke")
-TitleStroke.Color = HotPink; TitleStroke.Thickness = 1.5; TitleStroke.Transparency = 0.4
+TitleStroke.Color = IndigoMid; TitleStroke.Thickness = 1.5; TitleStroke.Transparency = 0.4
 TitleStroke.Parent = Title
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size                   = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position               = UDim2.new(1, -42, 0.5, -15)
-CloseBtn.BackgroundColor3       = HotPink
+CloseBtn.BackgroundColor3       = IndigoMid
 CloseBtn.BackgroundTransparency = 0.3
 CloseBtn.Text                   = "x"
 CloseBtn.TextColor3             = White
@@ -368,14 +379,14 @@ local function makeToggle(labelText, yPos)
     local Row = Instance.new("Frame")
     Row.Size                   = UDim2.new(1, 0, 0, 48)
     Row.Position               = UDim2.new(0, 0, 0, yPos)
-    Row.BackgroundColor3       = DeepPlum
-    Row.BackgroundTransparency = 0.4
+    Row.BackgroundColor3       = IndigoDark
+    Row.BackgroundTransparency = 0.3
     Row.BorderSizePixel        = 0
     Row.ZIndex                 = 4
     Row.Parent                 = Content
     Instance.new("UICorner", Row).CornerRadius = UDim.new(0, 10)
     local Stroke = Instance.new("UIStroke")
-    Stroke.Color = HotPink; Stroke.Transparency = 0.5; Stroke.Thickness = 1; Stroke.Parent = Row
+    Stroke.Color = IndigoMid; Stroke.Transparency = 0.4; Stroke.Thickness = 1; Stroke.Parent = Row
 
     local Lbl = Instance.new("TextLabel")
     Lbl.Size                   = UDim2.new(1, -80, 1, 0)
@@ -392,15 +403,15 @@ local function makeToggle(labelText, yPos)
     local BtnTrack = Instance.new("TextButton")
     BtnTrack.Size                   = UDim2.new(0, 46, 0, 24)
     BtnTrack.Position               = UDim2.new(1, -58, 0.5, -12)
-    BtnTrack.BackgroundColor3       = DeepPlum
-    BtnTrack.BackgroundTransparency = 0.2
+    BtnTrack.BackgroundColor3       = NavyDark
+    BtnTrack.BackgroundTransparency = 0.1
     BtnTrack.Text                   = ""
     BtnTrack.BorderSizePixel        = 0
     BtnTrack.ZIndex                 = 5
     BtnTrack.Parent                 = Row
     Instance.new("UICorner", BtnTrack).CornerRadius = UDim.new(1, 0)
     local BtnStroke = Instance.new("UIStroke")
-    BtnStroke.Color = HotPink; BtnStroke.Transparency = 0.4; BtnStroke.Thickness = 1
+    BtnStroke.Color = IndigoMid; BtnStroke.Transparency = 0.3; BtnStroke.Thickness = 1
     BtnStroke.Parent = BtnTrack
 
     local Knob = Instance.new("Frame")
@@ -423,7 +434,7 @@ MiscLabel.Size                   = UDim2.new(1, 0, 0, 20)
 MiscLabel.Position               = UDim2.new(0, 0, 0, 0)
 MiscLabel.BackgroundTransparency = 1
 MiscLabel.Text                   = "— MISC —"
-MiscLabel.TextColor3             = HotPink
+MiscLabel.TextColor3             = IndigoMid
 MiscLabel.Font                   = Enum.Font.GothamBold
 MiscLabel.TextSize               = 11
 MiscLabel.TextXAlignment         = Enum.TextXAlignment.Left
@@ -500,7 +511,6 @@ local function applyAntiRagdollState()
     end
 end
 
--- Aplicar estado guardado
 antiRagdollOn = antiRagdollSaved
 applyAntiRagdollState()
 
@@ -516,13 +526,57 @@ B3.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
+-- TOGGLE: INF JUMP  (yPos 192)
+-- ══════════════════════════════════════════
+local B4, K4 = makeToggle("Inf Jump", 192)
+
+local jumpForce      = 50
+local clampFallSpeed = 80
+
+RunService.Heartbeat:Connect(function()
+    if not infJumpOn then return end
+    local char = me.Character; if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp and hrp.Velocity.Y < -clampFallSpeed then
+        hrp.Velocity = Vector3.new(hrp.Velocity.X, -clampFallSpeed, hrp.Velocity.Z)
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if not infJumpOn then return end
+    local char = me.Character; if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then hrp.Velocity = Vector3.new(hrp.Velocity.X, jumpForce, hrp.Velocity.Z) end
+end)
+
+local function applyInfJumpState()
+    if infJumpOn then
+        K4.Position = UDim2.new(1,-21,0.5,-9); K4.BackgroundColor3 = JumpKnobOn
+    else
+        K4.Position = UDim2.new(0,3,0.5,-9);   K4.BackgroundColor3 = KnobOff
+    end
+end
+
+infJumpOn = infJumpSaved
+applyInfJumpState()
+
+B4.MouseButton1Click:Connect(function()
+    infJumpOn = not infJumpOn
+    if infJumpOn then
+        TweenService:Create(K4, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=JumpKnobOn}):Play()
+    else
+        TweenService:Create(K4, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ══════════════════════════════════════════
 -- SAVE CONFIG BUTTON (fijo abajo)
 -- ══════════════════════════════════════════
 local SaveBtn = Instance.new("TextButton")
 SaveBtn.Size                   = UDim2.new(1, -24, 0, 36)
 SaveBtn.Position               = UDim2.new(0, 12, 1, -48)
-SaveBtn.BackgroundColor3       = HotPink
-SaveBtn.BackgroundTransparency = 0.2
+SaveBtn.BackgroundColor3       = IndigoMid
+SaveBtn.BackgroundTransparency = 0.1
 SaveBtn.Text                   = "💾  Save Config"
 SaveBtn.TextColor3             = White
 SaveBtn.Font                   = Enum.Font.GothamBold
