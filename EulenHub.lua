@@ -761,15 +761,20 @@ local function autoSteal_findPrompt(animalData)
     return nil
 end
 
+-- ══════════════════════════════════════════
+-- FIX: autoSteal_execute sin task.spawn
+-- dispara fireproximityprompt inmediato
+-- ══════════════════════════════════════════
 local function autoSteal_execute(prompt)
     local data = autoStealInternalCache[prompt]
     if data and not data.ready then return false end
     autoStealInternalCache[prompt] = { ready = false }
     autoStealIsStealing = true
-    task.spawn(function()
-        pcall(function() fireproximityprompt(prompt) end)
-        task.wait(0.15)
-        autoStealInternalCache[prompt].ready = true
+    pcall(function() fireproximityprompt(prompt) end)
+    task.delay(0.15, function()
+        if autoStealInternalCache[prompt] then
+            autoStealInternalCache[prompt].ready = true
+        end
         autoStealIsStealing = false
     end)
     return true
