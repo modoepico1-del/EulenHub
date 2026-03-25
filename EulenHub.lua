@@ -5,6 +5,7 @@ local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting         = game:GetService("Lighting")
 local HttpService      = game:GetService("HttpService")
+local RunService       = game:GetService("RunService")
 local LocalPlayer      = Players.LocalPlayer
 local PlayerGui        = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -71,14 +72,95 @@ local function disableDarkMode()
 end
 
 -- ══════════════════════════════════════════
+-- GALAXY SKY
+-- ══════════════════════════════════════════
+local originalSkybox, galaxySkyBright, galaxySkyBrightConn
+local galaxyPlanets = {}
+local galaxyBloom, galaxyGalaxyCC
+
+local config = { GalaxySkyBright = false }
+
+local function enableGalaxySkyBright()
+    if galaxySkyBright then return end
+    originalSkybox = Lighting:FindFirstChildOfClass("Sky")
+    if originalSkybox then originalSkybox.Parent = nil end
+    galaxySkyBright = Instance.new("Sky")
+    galaxySkyBright.SkyboxBk = "rbxassetid://1534951537"
+    galaxySkyBright.SkyboxDn = "rbxassetid://1534951537"
+    galaxySkyBright.SkyboxFt = "rbxassetid://1534951537"
+    galaxySkyBright.SkyboxLf = "rbxassetid://1534951537"
+    galaxySkyBright.SkyboxRt = "rbxassetid://1534951537"
+    galaxySkyBright.SkyboxUp = "rbxassetid://1534951537"
+    galaxySkyBright.StarCount = 10000
+    galaxySkyBright.CelestialBodiesShown = false
+    galaxySkyBright.Parent = Lighting
+
+    galaxyBloom = Instance.new("BloomEffect")
+    galaxyBloom.Intensity = 1.5; galaxyBloom.Size = 40
+    galaxyBloom.Threshold = 0.8; galaxyBloom.Parent = Lighting
+
+    galaxyGalaxyCC = Instance.new("ColorCorrectionEffect")
+    galaxyGalaxyCC.Saturation = 0.8; galaxyGalaxyCC.Contrast = 0.3
+    galaxyGalaxyCC.TintColor = Color3.fromRGB(200,150,255)
+    galaxyGalaxyCC.Parent = Lighting
+
+    Lighting.Ambient = Color3.fromRGB(120,60,180)
+    Lighting.Brightness = 3
+    Lighting.ClockTime = 0
+
+    for i = 1, 2 do
+        local p = Instance.new("Part")
+        p.Shape = Enum.PartType.Ball
+        p.Size = Vector3.new(800+i*200, 800+i*200, 800+i*200)
+        p.Anchored = true; p.CanCollide = false; p.CastShadow = false
+        p.Material = Enum.Material.Neon
+        p.Color = Color3.fromRGB(140+i*20, 60+i*10, 200+i*15)
+        p.Transparency = 0.3
+        p.Position = Vector3.new(
+            math.cos(i*2) * (3000+i*500),
+            1500+i*300,
+            math.sin(i*2) * (3000+i*500)
+        )
+        p.Parent = workspace
+        table.insert(galaxyPlanets, p)
+    end
+
+    galaxySkyBrightConn = RunService.Heartbeat:Connect(function()
+        if not config.GalaxySkyBright then return end
+        local t = tick() * 0.5
+        Lighting.Ambient = Color3.fromRGB(
+            120 + math.floor(math.sin(t)*60),
+            50  + math.floor(math.sin(t*0.8)*40),
+            180 + math.floor(math.sin(t*1.2)*50)
+        )
+        if galaxyBloom then galaxyBloom.Intensity = 1.2 + math.sin(t*2)*0.4 end
+    end)
+end
+
+local function disableGalaxySkyBright()
+    if galaxySkyBrightConn then galaxySkyBrightConn:Disconnect(); galaxySkyBrightConn = nil end
+    if galaxySkyBright then galaxySkyBright:Destroy(); galaxySkyBright = nil end
+    if originalSkybox then originalSkybox.Parent = Lighting end
+    if galaxyBloom then galaxyBloom:Destroy(); galaxyBloom = nil end
+    if galaxyGalaxyCC then galaxyGalaxyCC:Destroy(); galaxyGalaxyCC = nil end
+    for _, obj in ipairs(galaxyPlanets) do if obj then obj:Destroy() end end
+    galaxyPlanets = {}
+    Lighting.Ambient = Color3.fromRGB(127,127,127)
+    Lighting.Brightness = 2
+    Lighting.ClockTime = 14
+end
+
+-- ══════════════════════════════════════════
 -- SAVE CONFIG
 -- ══════════════════════════════════════════
-local darkOn = false
+local darkOn   = false
+local galaxyOn = false
 
 local function saveConfig()
     pcall(function()
         writefile(CONFIG_FILE, HttpService:JSONEncode({
             DarkMode = darkOn,
+            Galaxy   = galaxyOn,
         }))
     end)
 end
@@ -87,7 +169,8 @@ local function loadConfig()
     pcall(function()
         if isfile and isfile(CONFIG_FILE) then
             local data = HttpService:JSONDecode(readfile(CONFIG_FILE))
-            if data.DarkMode ~= nil then darkOn = data.DarkMode end
+            if data.DarkMode ~= nil then darkOn   = data.DarkMode end
+            if data.Galaxy   ~= nil then galaxyOn = data.Galaxy   end
         end
     end)
 end
@@ -95,10 +178,10 @@ end
 loadConfig()
 
 -- ══════════════════════════════════════════
--- COLORES  (#DF6589 → #3C1053)
+-- COLORES (#DF6589 → #3C1053)
 -- ══════════════════════════════════════════
-local HotPink  = Color3.fromRGB(223, 101, 137)  -- #DF6589
-local DeepPlum = Color3.fromRGB(60,  16,  83)   -- #3C1053
+local HotPink  = Color3.fromRGB(223, 101, 137)
+local DeepPlum = Color3.fromRGB(60,  16,  83)
 local White    = Color3.fromRGB(255, 255, 255)
 local KnobOff  = Color3.fromRGB(180, 120, 160)
 local KnobOn   = Color3.fromRGB(223, 101, 137)
@@ -108,8 +191,10 @@ if PlayerGui:FindFirstChild("KmoneyHub") then
 end
 
 -- ══════════════════════════════════════════
--- GUI
+-- GUI  (500 x 360 para los dos toggles)
 -- ══════════════════════════════════════════
+local GUI_W, GUI_H = 500, 360
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KmoneyHub"
 ScreenGui.ResetOnSpawn   = false
@@ -118,15 +203,14 @@ ScreenGui.Parent         = PlayerGui
 
 local Main = Instance.new("Frame")
 Main.Name             = "Main"
-Main.Size             = UDim2.new(0, 500, 0, 300)
-Main.Position         = UDim2.new(0.5, -250, 0.5, -150)
+Main.Size             = UDim2.new(0, GUI_W, 0, GUI_H)
+Main.Position         = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2)
 Main.BackgroundColor3 = DeepPlum
 Main.BorderSizePixel  = 0
 Main.ClipsDescendants = true
 Main.Parent           = ScreenGui
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 14)
 
--- Gradiente de fondo: HotPink arriba → DeepPlum abajo
 local BgGrad = Instance.new("UIGradient")
 BgGrad.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0.0, HotPink),
@@ -166,8 +250,7 @@ Title.TextXAlignment         = Enum.TextXAlignment.Left
 Title.ZIndex                 = 5
 Title.Parent                 = Header
 local TitleStroke = Instance.new("UIStroke")
-TitleStroke.Color = HotPink
-TitleStroke.Thickness = 1.5; TitleStroke.Transparency = 0.4
+TitleStroke.Color = HotPink; TitleStroke.Thickness = 1.5; TitleStroke.Transparency = 0.4
 TitleStroke.Parent = Title
 
 local CloseBtn = Instance.new("TextButton")
@@ -263,19 +346,17 @@ MiscLabel.ZIndex                 = 4
 MiscLabel.Parent                 = Content
 
 -- ══════════════════════════════════════════
--- DARK MODE TOGGLE
+-- TOGGLE: DARK MODE  (yPos 24)
 -- ══════════════════════════════════════════
 local B1, K1 = makeToggle("Dark Mode", 24)
 
 local function applyDarkState()
     if darkOn then
         enableOptimizer(); enableDarkMode()
-        K1.Position         = UDim2.new(1, -21, 0.5, -9)
-        K1.BackgroundColor3 = KnobOn
+        K1.Position = UDim2.new(1,-21,0.5,-9); K1.BackgroundColor3 = KnobOn
     else
         disableOptimizer(); disableDarkMode()
-        K1.Position         = UDim2.new(0, 3, 0.5, -9)
-        K1.BackgroundColor3 = KnobOff
+        K1.Position = UDim2.new(0,3,0.5,-9);   K1.BackgroundColor3 = KnobOff
     end
 end
 
@@ -285,10 +366,43 @@ B1.MouseButton1Click:Connect(function()
     darkOn = not darkOn
     if darkOn then
         enableOptimizer(); enableDarkMode()
-        TweenService:Create(K1, ti, {Position = UDim2.new(1, -21, 0.5, -9), BackgroundColor3 = KnobOn}):Play()
+        TweenService:Create(K1, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=KnobOn}):Play()
     else
         disableOptimizer(); disableDarkMode()
-        TweenService:Create(K1, ti, {Position = UDim2.new(0, 3, 0.5, -9), BackgroundColor3 = KnobOff}):Play()
+        TweenService:Create(K1, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ══════════════════════════════════════════
+-- TOGGLE: GALAXY  (yPos 80, debajo de Dark Mode)
+-- ══════════════════════════════════════════
+local B2, K2 = makeToggle("Galaxy", 80)
+
+local GalaxyKnobOn = Color3.fromRGB(170, 100, 255)  -- morado galaxia cuando ON
+
+local function applyGalaxyState()
+    if galaxyOn then
+        config.GalaxySkyBright = true
+        enableGalaxySkyBright()
+        K2.Position = UDim2.new(1,-21,0.5,-9); K2.BackgroundColor3 = GalaxyKnobOn
+    else
+        config.GalaxySkyBright = false
+        disableGalaxySkyBright()
+        K2.Position = UDim2.new(0,3,0.5,-9);   K2.BackgroundColor3 = KnobOff
+    end
+end
+
+applyGalaxyState()
+
+B2.MouseButton1Click:Connect(function()
+    galaxyOn = not galaxyOn
+    config.GalaxySkyBright = galaxyOn
+    if galaxyOn then
+        enableGalaxySkyBright()
+        TweenService:Create(K2, ti, {Position=UDim2.new(1,-21,0.5,-9), BackgroundColor3=GalaxyKnobOn}):Play()
+    else
+        disableGalaxySkyBright()
+        TweenService:Create(K2, ti, {Position=UDim2.new(0,3,0.5,-9), BackgroundColor3=KnobOff}):Play()
     end
 end)
 
@@ -327,6 +441,7 @@ end)
 -- CERRAR
 -- ══════════════════════════════════════════
 CloseBtn.MouseButton1Click:Connect(function()
+    disableGalaxySkyBright()
     local t = TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size     = UDim2.new(0, 0, 0, 0),
         Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -360,6 +475,6 @@ end)
 Main.Size = UDim2.new(0, 0, 0, 0)
 Main.Position = UDim2.new(0.5, 0, 0.5, 0)
 TweenService:Create(Main, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size     = UDim2.new(0, 500, 0, 300),
-    Position = UDim2.new(0.5, -250, 0.5, -150),
+    Size     = UDim2.new(0, GUI_W, 0, GUI_H),
+    Position = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2),
 }):Play()
