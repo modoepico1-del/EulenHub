@@ -229,6 +229,7 @@ local unwalkOn               = false
 local espOn                  = false
 local unwalkConn             = nil
 local AUTO_STEAL_PROX_RADIUS = 7
+local STEAL_DURATION         = 0.2   -- ← nuevo: duración del steal en segundos
 
 -- ══════════════════════════════════════════
 -- SAVE / LOAD CONFIG
@@ -244,14 +245,15 @@ local espSaved         = false
 local function saveConfig()
     pcall(function()
         writefile(CONFIG_FILE, HttpService:JSONEncode({
-            DarkMode    = darkOn,
-            Galaxy      = galaxyOn,
-            AntiRagdoll = antiRagdollOn,
-            InfJump     = infJumpOn,
-            AutoSteal   = autoStealActive,
-            StealRadius = AUTO_STEAL_PROX_RADIUS,
-            Unwalk      = unwalkOn,
-            ESP         = espOn,
+            DarkMode      = darkOn,
+            Galaxy        = galaxyOn,
+            AntiRagdoll   = antiRagdollOn,
+            InfJump       = infJumpOn,
+            AutoSteal     = autoStealActive,
+            StealRadius   = AUTO_STEAL_PROX_RADIUS,
+            StealDuration = STEAL_DURATION,
+            Unwalk        = unwalkOn,
+            ESP           = espOn,
         }))
     end)
 end
@@ -260,14 +262,15 @@ local function loadConfig()
     pcall(function()
         if isfile and isfile(CONFIG_FILE) then
             local data = HttpService:JSONDecode(readfile(CONFIG_FILE))
-            if data.DarkMode    ~= nil then darkOn                 = data.DarkMode    end
-            if data.Galaxy      ~= nil then galaxyOn               = data.Galaxy      end
-            if data.AntiRagdoll ~= nil then antiRagdollSaved       = data.AntiRagdoll end
-            if data.InfJump     ~= nil then infJumpSaved           = data.InfJump     end
-            if data.AutoSteal   ~= nil then autoStealSaved         = data.AutoSteal   end
-            if data.StealRadius ~= nil then AUTO_STEAL_PROX_RADIUS = data.StealRadius end
-            if data.Unwalk      ~= nil then unwalkSaved            = data.Unwalk      end
-            if data.ESP         ~= nil then espSaved               = data.ESP         end
+            if data.DarkMode      ~= nil then darkOn                 = data.DarkMode      end
+            if data.Galaxy        ~= nil then galaxyOn               = data.Galaxy        end
+            if data.AntiRagdoll   ~= nil then antiRagdollSaved       = data.AntiRagdoll   end
+            if data.InfJump       ~= nil then infJumpSaved           = data.InfJump       end
+            if data.AutoSteal     ~= nil then autoStealSaved         = data.AutoSteal     end
+            if data.StealRadius   ~= nil then AUTO_STEAL_PROX_RADIUS = data.StealRadius   end
+            if data.StealDuration ~= nil then STEAL_DURATION         = data.StealDuration end
+            if data.Unwalk        ~= nil then unwalkSaved            = data.Unwalk        end
+            if data.ESP           ~= nil then espSaved               = data.ESP           end
         end
     end)
 end
@@ -291,18 +294,6 @@ end
 
 -- ══════════════════════════════════════════
 -- LAYOUT
--- Header    : 40px
--- Sep       : 1px
--- PAD_TOP   : 3px
--- MISC label: 14px
--- 6 filas   : 6×30 + 5×3 = 195px
--- gap sec   : 6px
--- AUTO label: 14px
--- 1 fila    : 30px
--- PAD_MID   : 3px
--- Save btn  : 26px
--- PAD_BOT   : 4px
--- Total     : 40+1+3+14+195+6+14+30+3+26+4 = 336 → GUI_H=340
 -- ══════════════════════════════════════════
 local GUI_W    = 300
 local GUI_H    = 340
@@ -460,16 +451,13 @@ local function makeToggle(labelText, yPos)
     Knob.Parent           = BtnTrack
     Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
-    return BtnTrack, Knob
+    return BtnTrack, Knob, Row
 end
 
 -- ══════════════════════════════════════════
 -- POSICIONES
--- MISC: filas 1-6  →  Dark Mode, Galaxy, Anti Ragdoll, Inf Jump, Unwalk, ESP
--- AUTO: fila  1    →  Auto Steal  (después de MISC + gap)
 -- ══════════════════════════════════════════
 local function miscRowY(i) return SEC_H + (i-1)*(ROW_H + ROW_GAP) end
--- base de la sección AUTO: tras 6 filas MISC + 6px de separación
 local AUTO_BASE  = SEC_H + 6*(ROW_H + ROW_GAP) + 6
 local function autoRowY(i) return AUTO_BASE + SEC_H + (i-1)*(ROW_H + ROW_GAP) end
 
@@ -484,7 +472,110 @@ local B7, K7 = makeToggle("ESP",          miscRowY(6))
 
 -- ── Sección AUTO ──
 makeSectionLabel("— AUTO —", AUTO_BASE)
-local B5, K5 = makeToggle("Auto Steal", autoRowY(1))
+-- Auto Steal con emoji ⚙️ y referencia al Row para right-click
+local B5, K5, AutoStealRow = makeToggle("Auto Steal  ⚙️", autoRowY(1))
+
+-- ══════════════════════════════════════════
+-- MINI PANEL AUTO STEAL (right-click)
+-- ══════════════════════════════════════════
+local miniPanelOpen = false
+local MiniPanel = Instance.new("Frame")
+MiniPanel.Name                 = "MiniPanel"
+MiniPanel.Size                 = UDim2.new(0, 170, 0, 58)
+MiniPanel.Position             = UDim2.new(0, 8, 0, autoRowY(1) + CONTENT_Y + ROW_H + 2)
+MiniPanel.BackgroundColor3     = IndigoDark
+MiniPanel.BackgroundTransparency = 0.08
+MiniPanel.BorderSizePixel      = 0
+MiniPanel.Visible              = false
+MiniPanel.ZIndex               = 20
+MiniPanel.Parent               = Main
+Instance.new("UICorner", MiniPanel).CornerRadius = UDim.new(0, 8)
+local MiniStroke = Instance.new("UIStroke", MiniPanel)
+MiniStroke.Color = ESP_HUB_BLUE; MiniStroke.Thickness = 1; MiniStroke.Transparency = 0.4
+
+-- Título mini panel
+local MiniTitle = Instance.new("TextLabel")
+MiniTitle.Size                   = UDim2.new(1, -8, 0, 18)
+MiniTitle.Position               = UDim2.new(0, 8, 0, 4)
+MiniTitle.BackgroundTransparency = 1
+MiniTitle.Text                   = "Steal Duration (s)"
+MiniTitle.TextColor3             = ESP_HUB_BLUE
+MiniTitle.Font                   = Enum.Font.GothamBold
+MiniTitle.TextSize               = 10
+MiniTitle.TextXAlignment         = Enum.TextXAlignment.Left
+MiniTitle.ZIndex                 = 21
+MiniTitle.Parent                 = MiniPanel
+
+-- Botón menos
+local MinusBtn = Instance.new("TextButton")
+MinusBtn.Size                   = UDim2.new(0, 22, 0, 22)
+MinusBtn.Position               = UDim2.new(0, 8, 0, 28)
+MinusBtn.BackgroundColor3       = IndigoMid
+MinusBtn.BackgroundTransparency = 0.2
+MinusBtn.Text                   = "−"
+MinusBtn.TextColor3             = White
+MinusBtn.Font                   = Enum.Font.GothamBold
+MinusBtn.TextSize               = 14
+MinusBtn.BorderSizePixel        = 0
+MinusBtn.ZIndex                 = 22
+MinusBtn.Parent                 = MiniPanel
+Instance.new("UICorner", MinusBtn).CornerRadius = UDim.new(0, 6)
+
+-- Label valor
+local DurLabel = Instance.new("TextLabel")
+DurLabel.Size                   = UDim2.new(0, 70, 0, 22)
+DurLabel.Position               = UDim2.new(0, 34, 0, 28)
+DurLabel.BackgroundTransparency = 1
+DurLabel.Text                   = tostring(STEAL_DURATION)
+DurLabel.TextColor3             = White
+DurLabel.Font                   = Enum.Font.GothamBold
+DurLabel.TextSize               = 12
+DurLabel.TextXAlignment         = Enum.TextXAlignment.Center
+DurLabel.ZIndex                 = 22
+DurLabel.Parent                 = MiniPanel
+
+-- Botón más
+local PlusBtn = Instance.new("TextButton")
+PlusBtn.Size                   = UDim2.new(0, 22, 0, 22)
+PlusBtn.Position               = UDim2.new(0, 108, 0, 28)
+PlusBtn.BackgroundColor3       = IndigoMid
+PlusBtn.BackgroundTransparency = 0.2
+PlusBtn.Text                   = "+"
+PlusBtn.TextColor3             = White
+PlusBtn.Font                   = Enum.Font.GothamBold
+PlusBtn.TextSize               = 14
+PlusBtn.BorderSizePixel        = 0
+PlusBtn.ZIndex                 = 22
+PlusBtn.Parent                 = MiniPanel
+Instance.new("UICorner", PlusBtn).CornerRadius = UDim.new(0, 6)
+
+local function updateDurLabel()
+    DurLabel.Text = string.format("%.2f", STEAL_DURATION)
+end
+
+MinusBtn.MouseButton1Click:Connect(function()
+    STEAL_DURATION = math.max(0.01, math.floor((STEAL_DURATION - 0.01)*100 + 0.5)/100)
+    updateDurLabel()
+end)
+
+PlusBtn.MouseButton1Click:Connect(function()
+    STEAL_DURATION = math.floor((STEAL_DURATION + 0.01)*100 + 0.5)/100
+    updateDurLabel()
+end)
+
+-- Toggle mini panel con clic derecho en el row
+AutoStealRow.InputBegan:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then
+        miniPanelOpen = not miniPanelOpen
+        MiniPanel.Visible = miniPanelOpen
+    end
+end)
+B5.InputBegan:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton2 then
+        miniPanelOpen = not miniPanelOpen
+        MiniPanel.Visible = miniPanelOpen
+    end
+end)
 
 -- ══════════════════════════════════════════
 -- DARK MODE
@@ -640,7 +731,7 @@ B6.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- ESP  — hitbox BLANCO, nombre AZUL CLARO hub
+-- ESP  — hitbox AZUL CLARO HUB, nombre AZUL CLARO HUB (mismo color)
 -- ══════════════════════════════════════════
 local espObjects     = {}
 local espConnections = {}
@@ -655,11 +746,12 @@ local function createESP(plr)
     local hum  = c:FindFirstChildOfClass("Humanoid")
     if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
 
+    -- ► Box ahora usa ESP_HUB_BLUE igual que el nombre
     local hitbox = Instance.new("BoxHandleAdornment")
     hitbox.Name         = "NightESP"
     hitbox.Adornee      = hrp
     hitbox.Size         = Vector3.new(4, 6, 2)
-    hitbox.Color3       = Color3.fromRGB(255, 255, 255)  -- BLANCO
+    hitbox.Color3       = ESP_HUB_BLUE   -- ← CAMBIO: azul claro igual que el nombre
     hitbox.Transparency = 0.3
     hitbox.ZIndex       = 10
     hitbox.AlwaysOnTop  = true
@@ -678,7 +770,7 @@ local function createESP(plr)
         label.Size                   = UDim2.new(1, 0, 1, 0)
         label.BackgroundTransparency = 1
         label.Text                   = plr.DisplayName or plr.Name
-        label.TextColor3             = ESP_HUB_BLUE           -- AZUL CLARO HUB
+        label.TextColor3             = ESP_HUB_BLUE
         label.Font                   = Enum.Font.GothamBold
         label.TextScaled             = true
         label.TextStrokeTransparency = 0.4
@@ -781,11 +873,13 @@ percentLabel.Parent                 = progressBarBg
 local function animateProgressBar()
     task.spawn(function()
         progressFill.Size = UDim2.new(0, 0, 1, 0); percentLabel.Text = "0%"
-        for i = 1, 10 do
-            local pct = i/10
+        local steps = 10
+        local stepWait = STEAL_DURATION / steps
+        for i = 1, steps do
+            local pct = i/steps
             progressFill.Size = UDim2.new(pct, 0, 1, 0)
             percentLabel.Text = math.floor(pct*100).."%"
-            task.wait(0.015)
+            task.wait(stepWait)
         end
         task.wait(0.2)
         progressFill.Size = UDim2.new(0,0,1,0); percentLabel.Text = "0%"
@@ -793,7 +887,7 @@ local function animateProgressBar()
 end
 
 -- ══════════════════════════════════════════
--- CIRCULO DE RADIO (disco neon blanco)
+-- CIRCULO DE RADIO
 -- ══════════════════════════════════════════
 local stealCirclePart, stealCircleConn = nil, nil
 
@@ -833,14 +927,13 @@ local function showStealCircle(radius)
 end
 
 -- ══════════════════════════════════════════
--- AUTO STEAL  (cooldown 0.01s)
+-- AUTO STEAL  (usa STEAL_DURATION como cooldown)
 -- ══════════════════════════════════════════
 local autoStealStealConnection = nil
 local autoStealAnimalsCache    = {}
 local autoStealPromptCache     = {}
 local autoStealLastFire        = {}
 local autoStealScannerStarted  = false
-local STEAL_COOLDOWN           = 0.01
 
 local animalsDataAS = {}
 pcall(function()
@@ -932,7 +1025,8 @@ end
 local function autoSteal_fire(prompt, uid)
     local now  = tick()
     local last = autoStealLastFire[uid] or 0
-    if (now - last) < STEAL_COOLDOWN then return false end
+    -- ← usa STEAL_DURATION como cooldown entre disparos
+    if (now - last) < STEAL_DURATION then return false end
     autoStealLastFire[uid] = now
     pcall(function() fireproximityprompt(prompt) end)
     return true
