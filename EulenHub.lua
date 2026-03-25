@@ -1,4 +1,4 @@
--- KMONEY HUB - 300x330
+-- KMONEY HUB - 300x340
 
 local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
@@ -277,43 +277,43 @@ loadConfig()
 -- ══════════════════════════════════════════
 -- COLORES
 -- ══════════════════════════════════════════
-local NavyDark   = Color3.fromRGB(30,  35,  65)
-local IndigoDark = Color3.fromRGB(45,  48,  90)
-local IndigoMid  = Color3.fromRGB(75,  75, 130)
-local White      = Color3.fromRGB(255, 255, 255)
-local KnobOff    = Color3.fromRGB(80,  85, 120)
-local KnobOn     = Color3.fromRGB(120, 130, 200)
+local NavyDark     = Color3.fromRGB(30,  35,  65)
+local IndigoDark   = Color3.fromRGB(45,  48,  90)
+local IndigoMid    = Color3.fromRGB(75,  75, 130)
+local White        = Color3.fromRGB(255, 255, 255)
+local KnobOff      = Color3.fromRGB(80,  85, 120)
+local KnobOn       = Color3.fromRGB(120, 130, 200)
+local ESP_HUB_BLUE = Color3.fromRGB(130, 180, 255)  -- azul claro estilo hub
 
 if PlayerGui:FindFirstChild("KmoneyHub") then
     PlayerGui:FindFirstChild("KmoneyHub"):Destroy()
 end
 
 -- ══════════════════════════════════════════
--- LAYOUT (7 filas, 300×330)
---
---  Header   : 40px
---  Sep line : 1px
---  PAD_TOP  : 3px
---  Sec label: 14px
---  7 rows   : 7×30 = 210px
---  6 gaps   : 6×3  = 18px
---  PAD_MID  : 3px
---  Save btn : 26px
---  PAD_BOT  : 4px
---  Total    : 40+1+3+14+210+18+3+26+4 = 319 → GUI_H=330 ✓
+-- LAYOUT
+-- Header    : 40px
+-- Sep       : 1px
+-- PAD_TOP   : 3px
+-- MISC label: 14px
+-- 6 filas   : 6×30 + 5×3 = 195px
+-- gap sec   : 6px
+-- AUTO label: 14px
+-- 1 fila    : 30px
+-- PAD_MID   : 3px
+-- Save btn  : 26px
+-- PAD_BOT   : 4px
+-- Total     : 40+1+3+14+195+6+14+30+3+26+4 = 336 → GUI_H=340
 -- ══════════════════════════════════════════
 local GUI_W    = 300
-local GUI_H    = 330
+local GUI_H    = 340
 local ROW_H    = 30
 local ROW_GAP  = 3
 local SEC_H    = 14
 local HEADER_H = 40
-local PAD_TOP  = 3
-local PAD_MID  = 3
-local SAVE_H   = 26
 local PAD_BOT  = 4
+local SAVE_H   = 26
 
-local CONTENT_Y = HEADER_H + 1 + PAD_TOP  -- 44
+local CONTENT_Y = HEADER_H + 1 + 3  -- 44
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name           = "KmoneyHub"
@@ -387,15 +387,30 @@ CloseBtn.ZIndex                 = 6
 CloseBtn.Parent                 = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
--- ── Content ──
+-- ── Content frame ──
 local Content = Instance.new("Frame")
-Content.Size                   = UDim2.new(1, -16, 0, SEC_H + 7*(ROW_H+ROW_GAP))
+Content.Size                   = UDim2.new(1, -16, 1, -(CONTENT_Y + SAVE_H + PAD_BOT + 12))
 Content.Position               = UDim2.new(0, 8, 0, CONTENT_Y)
 Content.BackgroundTransparency = 1
 Content.ZIndex                 = 3
 Content.Parent                 = Main
 
+-- ── Helpers ──
 local ti = TweenInfo.new(0.18, Enum.EasingStyle.Quad)
+
+local function makeSectionLabel(text, yPos)
+    local Lbl = Instance.new("TextLabel")
+    Lbl.Size                   = UDim2.new(1, 0, 0, SEC_H)
+    Lbl.Position               = UDim2.new(0, 0, 0, yPos)
+    Lbl.BackgroundTransparency = 1
+    Lbl.Text                   = text
+    Lbl.TextColor3             = IndigoMid
+    Lbl.Font                   = Enum.Font.GothamBold
+    Lbl.TextSize               = 10
+    Lbl.TextXAlignment         = Enum.TextXAlignment.Left
+    Lbl.ZIndex                 = 4
+    Lbl.Parent                 = Content
+end
 
 local function makeToggle(labelText, yPos)
     local Row = Instance.new("Frame")
@@ -448,27 +463,28 @@ local function makeToggle(labelText, yPos)
     return BtnTrack, Knob
 end
 
-local MiscLabel = Instance.new("TextLabel")
-MiscLabel.Size                   = UDim2.new(1, 0, 0, SEC_H)
-MiscLabel.Position               = UDim2.new(0, 0, 0, 0)
-MiscLabel.BackgroundTransparency = 1
-MiscLabel.Text                   = "— MISC —"
-MiscLabel.TextColor3             = IndigoMid
-MiscLabel.Font                   = Enum.Font.GothamBold
-MiscLabel.TextSize               = 10
-MiscLabel.TextXAlignment         = Enum.TextXAlignment.Left
-MiscLabel.ZIndex                 = 4
-MiscLabel.Parent                 = Content
+-- ══════════════════════════════════════════
+-- POSICIONES
+-- MISC: filas 1-6  →  Dark Mode, Galaxy, Anti Ragdoll, Inf Jump, Unwalk, ESP
+-- AUTO: fila  1    →  Auto Steal  (después de MISC + gap)
+-- ══════════════════════════════════════════
+local function miscRowY(i) return SEC_H + (i-1)*(ROW_H + ROW_GAP) end
+-- base de la sección AUTO: tras 6 filas MISC + 6px de separación
+local AUTO_BASE  = SEC_H + 6*(ROW_H + ROW_GAP) + 6
+local function autoRowY(i) return AUTO_BASE + SEC_H + (i-1)*(ROW_H + ROW_GAP) end
 
-local function rowY(i) return SEC_H + (i-1)*(ROW_H + ROW_GAP) end
+-- ── Sección MISC ──
+makeSectionLabel("— MISC —", 0)
+local B1, K1 = makeToggle("Dark Mode",    miscRowY(1))
+local B2, K2 = makeToggle("Galaxy",       miscRowY(2))
+local B3, K3 = makeToggle("Anti Ragdoll", miscRowY(3))
+local B4, K4 = makeToggle("Inf Jump",     miscRowY(4))
+local B6, K6 = makeToggle("Unwalk",       miscRowY(5))
+local B7, K7 = makeToggle("ESP",          miscRowY(6))
 
-local B1, K1 = makeToggle("Dark Mode",    rowY(1))
-local B2, K2 = makeToggle("Galaxy",       rowY(2))
-local B3, K3 = makeToggle("Anti Ragdoll", rowY(3))
-local B4, K4 = makeToggle("Inf Jump",     rowY(4))
-local B5, K5 = makeToggle("Auto Steal",   rowY(5))
-local B6, K6 = makeToggle("Unwalk",       rowY(6))
-local B7, K7 = makeToggle("ESP",          rowY(7))
+-- ── Sección AUTO ──
+makeSectionLabel("— AUTO —", AUTO_BASE)
+local B5, K5 = makeToggle("Auto Steal", autoRowY(1))
 
 -- ══════════════════════════════════════════
 -- DARK MODE
@@ -584,7 +600,153 @@ B4.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- BARRA DE PROGRESO AUTO STEAL
+-- UNWALK
+-- ══════════════════════════════════════════
+local function enableUnwalk()
+    local char=me.Character; if not char then return end
+    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
+    local anim=hum:FindFirstChildOfClass("Animator"); if not anim then return end
+    for _,t in ipairs(anim:GetPlayingAnimationTracks()) do t:Stop(0) end
+    if unwalkConn then unwalkConn:Disconnect() end
+    unwalkConn = RS.Heartbeat:Connect(function()
+        if not unwalkOn then unwalkConn:Disconnect(); unwalkConn=nil; return end
+        local c=me.Character; if not c then return end
+        local h=c:FindFirstChildOfClass("Humanoid"); if not h then return end
+        local an=h:FindFirstChildOfClass("Animator"); if not an then return end
+        for _,t in ipairs(an:GetPlayingAnimationTracks()) do t:Stop(0) end
+    end)
+end
+local function disableUnwalk()
+    if unwalkConn then unwalkConn:Disconnect(); unwalkConn=nil end
+end
+local function applyUnwalkState()
+    if unwalkOn then
+        enableUnwalk(); K6.Position=UDim2.new(1,-17,0.5,-7); K6.BackgroundColor3=KnobOn
+    else
+        disableUnwalk(); K6.Position=UDim2.new(0,3,0.5,-7); K6.BackgroundColor3=KnobOff
+    end
+end
+unwalkOn = unwalkSaved
+applyUnwalkState()
+B6.MouseButton1Click:Connect(function()
+    unwalkOn = not unwalkOn
+    if unwalkOn then
+        enableUnwalk()
+        TweenService:Create(K6, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
+    else
+        disableUnwalk()
+        TweenService:Create(K6, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ══════════════════════════════════════════
+-- ESP  — hitbox BLANCO, nombre AZUL CLARO hub
+-- ══════════════════════════════════════════
+local espObjects     = {}
+local espConnections = {}
+
+local function createESP(plr)
+    if plr == me then return end
+    if not plr.Character then return end
+    if plr.Character:FindFirstChild("NightESP") then return end
+    local c    = plr.Character
+    local hrp  = c:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+    local head = c:FindFirstChild("Head")
+    local hum  = c:FindFirstChildOfClass("Humanoid")
+    if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
+
+    local hitbox = Instance.new("BoxHandleAdornment")
+    hitbox.Name         = "NightESP"
+    hitbox.Adornee      = hrp
+    hitbox.Size         = Vector3.new(4, 6, 2)
+    hitbox.Color3       = Color3.fromRGB(255, 255, 255)  -- BLANCO
+    hitbox.Transparency = 0.3
+    hitbox.ZIndex       = 10
+    hitbox.AlwaysOnTop  = true
+    hitbox.Parent       = c
+    espObjects[plr]     = hitbox
+
+    if head then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name        = "ESP_Name"
+        billboard.Adornee     = head
+        billboard.Size        = UDim2.new(0, 200, 0, 50)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent      = c
+        local label = Instance.new("TextLabel")
+        label.Size                   = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text                   = plr.DisplayName or plr.Name
+        label.TextColor3             = ESP_HUB_BLUE           -- AZUL CLARO HUB
+        label.Font                   = Enum.Font.GothamBold
+        label.TextScaled             = true
+        label.TextStrokeTransparency = 0.4
+        label.TextStrokeColor3       = Color3.fromRGB(0, 0, 0)
+        label.Parent                 = billboard
+    end
+end
+
+local function removeESP(plr)
+    pcall(function()
+        if plr.Character then
+            local h = plr.Character:FindFirstChild("NightESP"); if h then h:Destroy() end
+            local n = plr.Character:FindFirstChild("ESP_Name"); if n then n:Destroy() end
+            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Automatic end
+        end
+        espObjects[plr] = nil
+    end)
+end
+
+local function enableESP()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= me then
+            if plr.Character then pcall(function() createESP(plr) end) end
+            local c = plr.CharacterAdded:Connect(function()
+                task.wait(0.1); if espOn then pcall(function() createESP(plr) end) end
+            end)
+            table.insert(espConnections, c)
+        end
+    end
+    local c2 = Players.PlayerAdded:Connect(function(plr)
+        if plr == me then return end
+        local c3 = plr.CharacterAdded:Connect(function()
+            task.wait(0.1); if espOn then pcall(function() createESP(plr) end) end
+        end)
+        table.insert(espConnections, c3)
+    end)
+    table.insert(espConnections, c2)
+end
+
+local function disableESP()
+    for _, plr in ipairs(Players:GetPlayers()) do pcall(function() removeESP(plr) end) end
+    for _, conn in ipairs(espConnections) do if conn and conn.Connected then conn:Disconnect() end end
+    espConnections = {}; espObjects = {}
+end
+
+local function applyEspState()
+    if espOn then
+        enableESP(); K7.Position=UDim2.new(1,-17,0.5,-7); K7.BackgroundColor3=KnobOn
+    else
+        disableESP(); K7.Position=UDim2.new(0,3,0.5,-7);  K7.BackgroundColor3=KnobOff
+    end
+end
+espOn = espSaved
+applyEspState()
+B7.MouseButton1Click:Connect(function()
+    espOn = not espOn
+    if espOn then
+        enableESP()
+        TweenService:Create(K7, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
+    else
+        disableESP()
+        TweenService:Create(K7, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
+    end
+end)
+
+-- ══════════════════════════════════════════
+-- BARRA DE PROGRESO
 -- ══════════════════════════════════════════
 local progressBarBg = Instance.new("Frame")
 progressBarBg.Size                   = UDim2.new(1, -16, 0, 5)
@@ -631,7 +793,7 @@ local function animateProgressBar()
 end
 
 -- ══════════════════════════════════════════
--- CIRCULO DE RADIO (neon disc, no cuadrado)
+-- CIRCULO DE RADIO (disco neon blanco)
 -- ══════════════════════════════════════════
 local stealCirclePart, stealCircleConn = nil, nil
 
@@ -642,21 +804,20 @@ end
 
 local function showStealCircle(radius)
     if stealCirclePart then
-        stealCirclePart.Size = Vector3.new(radius*2, 0.15, radius*2)
+        stealCirclePart.Size = Vector3.new(0.15, radius*2, radius*2)
         return
     end
-    -- Disco plano neon = circulo visible sin SelectionBox
     stealCirclePart = Instance.new("Part")
-    stealCirclePart.Name        = "KmoneyStealCircle"
-    stealCirclePart.Shape       = Enum.PartType.Cylinder
-    stealCirclePart.Size        = Vector3.new(0.15, radius*2, radius*2)
-    stealCirclePart.Anchored    = true
-    stealCirclePart.CanCollide  = false
-    stealCirclePart.CastShadow  = false
-    stealCirclePart.Material    = Enum.Material.Neon
-    stealCirclePart.Color       = Color3.fromRGB(255, 255, 255)
+    stealCirclePart.Name         = "KmoneyStealCircle"
+    stealCirclePart.Shape        = Enum.PartType.Cylinder
+    stealCirclePart.Size         = Vector3.new(0.15, radius*2, radius*2)
+    stealCirclePart.Anchored     = true
+    stealCirclePart.CanCollide   = false
+    stealCirclePart.CastShadow   = false
+    stealCirclePart.Material     = Enum.Material.Neon
+    stealCirclePart.Color        = Color3.fromRGB(255, 255, 255)
     stealCirclePart.Transparency = 0.55
-    stealCirclePart.Parent      = workspace
+    stealCirclePart.Parent       = workspace
 
     stealCircleConn = RunService.Heartbeat:Connect(function()
         if not autoStealActive then hideStealCircle(); return end
@@ -672,14 +833,14 @@ local function showStealCircle(radius)
 end
 
 -- ══════════════════════════════════════════
--- AUTO STEAL — lógica mejorada (más rápido)
+-- AUTO STEAL  (cooldown 0.01s)
 -- ══════════════════════════════════════════
 local autoStealStealConnection = nil
 local autoStealAnimalsCache    = {}
 local autoStealPromptCache     = {}
-local autoStealLastFire        = {}   -- uid → tick()
+local autoStealLastFire        = {}
 local autoStealScannerStarted  = false
-local STEAL_COOLDOWN           = 0.08 -- segundos entre fires del mismo prompt
+local STEAL_COOLDOWN           = 0.01
 
 local animalsDataAS = {}
 pcall(function()
@@ -719,11 +880,11 @@ local function autoSteal_scanPlot(plot)
                 end
             end
             table.insert(autoStealAnimalsCache, {
-                name            = animalName,
-                plot            = plot.Name,
-                slot            = podium.Name,
-                worldPosition   = podium:GetPivot().Position,
-                uid             = plot.Name.."_"..podium.Name,
+                name          = animalName,
+                plot          = plot.Name,
+                slot          = podium.Name,
+                worldPosition = podium:GetPivot().Position,
+                uid           = plot.Name.."_"..podium.Name,
             })
         end
     end
@@ -742,25 +903,23 @@ local function autoSteal_initScanner()
         task.spawn(function()
             while task.wait(4) do
                 autoStealAnimalsCache = {}
-                autoStealPromptCache  = {}  -- limpia caché para que re-escanee prompts también
+                autoStealPromptCache  = {}
                 for _, plot in ipairs(plots:GetChildren()) do if plot:IsA("Model") then autoSteal_scanPlot(plot) end end
             end
         end)
     end)
 end
 
--- Busca el ProximityPrompt del podium en el workspace
 local function autoSteal_findPrompt(animalData)
     if not animalData then return nil end
     local cached = autoStealPromptCache[animalData.uid]
     if cached and cached.Parent then return cached end
-    local plots   = workspace:FindFirstChild("Plots");                      if not plots   then return nil end
-    local plot    = plots:FindFirstChild(animalData.plot);                  if not plot    then return nil end
-    local podiums = plot:FindFirstChild("AnimalPodiums");                   if not podiums then return nil end
-    local podium  = podiums:FindFirstChild(animalData.slot);                if not podium  then return nil end
-    local base    = podium:FindFirstChild("Base");                          if not base    then return nil end
-    local spawn   = base:FindFirstChild("Spawn");                           if not spawn   then return nil end
-    -- busca en todos los hijos, no solo PromptAttachment
+    local plots   = workspace:FindFirstChild("Plots");                     if not plots   then return nil end
+    local plot    = plots:FindFirstChild(animalData.plot);                 if not plot    then return nil end
+    local podiums = plot:FindFirstChild("AnimalPodiums");                  if not podiums then return nil end
+    local podium  = podiums:FindFirstChild(animalData.slot);               if not podium  then return nil end
+    local base    = podium:FindFirstChild("Base");                         if not base    then return nil end
+    local spawn   = base:FindFirstChild("Spawn");                          if not spawn   then return nil end
     for _, desc in ipairs(spawn:GetDescendants()) do
         if desc:IsA("ProximityPrompt") then
             autoStealPromptCache[animalData.uid] = desc
@@ -770,7 +929,6 @@ local function autoSteal_findPrompt(animalData)
     return nil
 end
 
--- Dispara el prompt si pasó el cooldown
 local function autoSteal_fire(prompt, uid)
     local now  = tick()
     local last = autoStealLastFire[uid] or 0
@@ -851,151 +1009,7 @@ B5.MouseButton1Click:Connect(function()
 end)
 
 -- ══════════════════════════════════════════
--- UNWALK
--- ══════════════════════════════════════════
-local function enableUnwalk()
-    local char=me.Character; if not char then return end
-    local hum=char:FindFirstChildOfClass("Humanoid"); if not hum then return end
-    local anim=hum:FindFirstChildOfClass("Animator"); if not anim then return end
-    for _,t in ipairs(anim:GetPlayingAnimationTracks()) do t:Stop(0) end
-    if unwalkConn then unwalkConn:Disconnect() end
-    unwalkConn = RS.Heartbeat:Connect(function()
-        if not unwalkOn then unwalkConn:Disconnect(); unwalkConn=nil; return end
-        local c=me.Character; if not c then return end
-        local h=c:FindFirstChildOfClass("Humanoid"); if not h then return end
-        local an=h:FindFirstChildOfClass("Animator"); if not an then return end
-        for _,t in ipairs(an:GetPlayingAnimationTracks()) do t:Stop(0) end
-    end)
-end
-local function disableUnwalk()
-    if unwalkConn then unwalkConn:Disconnect(); unwalkConn=nil end
-end
-local function applyUnwalkState()
-    if unwalkOn then
-        enableUnwalk(); K6.Position=UDim2.new(1,-17,0.5,-7); K6.BackgroundColor3=KnobOn
-    else
-        disableUnwalk(); K6.Position=UDim2.new(0,3,0.5,-7); K6.BackgroundColor3=KnobOff
-    end
-end
-unwalkOn = unwalkSaved
-applyUnwalkState()
-B6.MouseButton1Click:Connect(function()
-    unwalkOn = not unwalkOn
-    if unwalkOn then
-        enableUnwalk()
-        TweenService:Create(K6, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
-    else
-        disableUnwalk()
-        TweenService:Create(K6, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
-    end
-end)
-
--- ══════════════════════════════════════════
--- ESP
--- ══════════════════════════════════════════
-local espObjects     = {}
-local espConnections = {}
-
-local function createESP(plr)
-    if plr == me then return end
-    if not plr.Character then return end
-    if plr.Character:FindFirstChild("NightESP") then return end
-    local c   = plr.Character
-    local hrp = c:FindFirstChild("HumanoidRootPart"); if not hrp then return end
-    local head = c:FindFirstChild("Head")
-    local hum  = c:FindFirstChildOfClass("Humanoid")
-    if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
-    local hitbox = Instance.new("BoxHandleAdornment")
-    hitbox.Name            = "NightESP"
-    hitbox.Adornee         = hrp
-    hitbox.Size            = Vector3.new(4, 6, 2)
-    hitbox.Color3          = Color3.fromRGB(255, 0, 50)
-    hitbox.Transparency    = 0.3
-    hitbox.ZIndex          = 10
-    hitbox.AlwaysOnTop     = true
-    hitbox.Parent          = c
-    espObjects[plr]        = hitbox
-    if head then
-        local billboard = Instance.new("BillboardGui")
-        billboard.Name         = "ESP_Name"
-        billboard.Adornee      = head
-        billboard.Size         = UDim2.new(0, 200, 0, 50)
-        billboard.StudsOffset  = Vector3.new(0, 3, 0)
-        billboard.AlwaysOnTop  = true
-        billboard.Parent       = c
-        local label = Instance.new("TextLabel")
-        label.Size                  = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.Text                  = plr.DisplayName or plr.Name
-        label.TextColor3            = Color3.fromRGB(255, 0, 0)
-        label.Font                  = Enum.Font.GothamBold
-        label.TextScaled            = true
-        label.TextStrokeTransparency = 0.6
-        label.TextStrokeColor3      = Color3.fromRGB(0, 0, 0)
-        label.Parent                = billboard
-    end
-end
-
-local function removeESP(plr)
-    pcall(function()
-        if plr.Character then
-            local h = plr.Character:FindFirstChild("NightESP");  if h then h:Destroy() end
-            local n = plr.Character:FindFirstChild("ESP_Name");  if n then n:Destroy() end
-            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Automatic end
-        end
-        espObjects[plr] = nil
-    end)
-end
-
-local function enableESP()
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= me then
-            if plr.Character then pcall(function() createESP(plr) end) end
-            local c = plr.CharacterAdded:Connect(function()
-                task.wait(0.1); if espOn then pcall(function() createESP(plr) end) end
-            end)
-            table.insert(espConnections, c)
-        end
-    end
-    local c2 = Players.PlayerAdded:Connect(function(plr)
-        if plr == me then return end
-        local c3 = plr.CharacterAdded:Connect(function()
-            task.wait(0.1); if espOn then pcall(function() createESP(plr) end) end
-        end)
-        table.insert(espConnections, c3)
-    end)
-    table.insert(espConnections, c2)
-end
-
-local function disableESP()
-    for _, plr in ipairs(Players:GetPlayers()) do pcall(function() removeESP(plr) end) end
-    for _, conn in ipairs(espConnections) do if conn and conn.Connected then conn:Disconnect() end end
-    espConnections = {}; espObjects = {}
-end
-
-local function applyEspState()
-    if espOn then
-        enableESP(); K7.Position=UDim2.new(1,-17,0.5,-7); K7.BackgroundColor3=KnobOn
-    else
-        disableESP(); K7.Position=UDim2.new(0,3,0.5,-7);  K7.BackgroundColor3=KnobOff
-    end
-end
-espOn = espSaved
-applyEspState()
-B7.MouseButton1Click:Connect(function()
-    espOn = not espOn
-    if espOn then
-        enableESP()
-        TweenService:Create(K7, ti, {Position=UDim2.new(1,-17,0.5,-7), BackgroundColor3=KnobOn}):Play()
-    else
-        disableESP()
-        TweenService:Create(K7, ti, {Position=UDim2.new(0,3,0.5,-7), BackgroundColor3=KnobOff}):Play()
-    end
-end)
-
--- ══════════════════════════════════════════
--- SAVE CONFIG (fijo al fondo)
+-- SAVE CONFIG
 -- ══════════════════════════════════════════
 local SaveBtn = Instance.new("TextButton")
 SaveBtn.Size                   = UDim2.new(1, -16, 0, SAVE_H)
