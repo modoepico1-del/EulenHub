@@ -17,7 +17,6 @@ player.CharacterAdded:Connect(function(newChar)
     HRP       = newChar:WaitForChild("HumanoidRootPart", 5)
 end)
 
--- ─── AUTO STEAL ────────────────────────────────────────────────
 local stealEnabled  = false
 local stealCooldown = 0.2
 local HOLD_DURATION = 0.5
@@ -80,7 +79,6 @@ local function stopAutoSteal()
     stealThread  = nil
 end
 
--- ─── ANTI RAGDOLL ──────────────────────────────────────────────
 local antiRagdollEnabled      = false
 local RAGDOLL_SPEED           = 16
 local currentCharacter        = nil
@@ -162,7 +160,6 @@ player.CharacterAdded:Connect(function(newChar)
     if antiRagdollEnabled then task.wait(1); setupAntiRagdoll(newChar) end
 end)
 
--- ─── XRAY ──────────────────────────────────────────────────────
 local unwalkEnabled        = false
 local originalTransparency = {}
 local unwalkDescConn       = nil
@@ -238,7 +235,6 @@ local function stopUnwalk()
     originalTransparency = {}
 end
 
--- ─── SAVE / LOAD ───────────────────────────────────────────────
 local CONFIG_FILE = "KMoneyHub_config.json"
 
 local function saveConfig()
@@ -255,7 +251,6 @@ end
 local savedCfg = {}
 pcall(function() savedCfg = HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
 
--- ─── DARK MODE (Solid Black Skybox) ────────────────────────────
 local darkmodeEnabled  = false
 local SKYBOX_ID        = "rbxassetid://120677415283673"
 local originalSky      = nil
@@ -302,13 +297,10 @@ local function stopDarkmode()
     end)
 end
 
--- ─── PALETA ────────────────────────────────────────────────────
 local WHITE      = Color3.fromRGB(255, 255, 255)
 local BLACK      = Color3.fromRGB(0, 0, 0)
-local TRANSPARENT = Color3.fromRGB(0, 0, 0)
 local FULL_HEIGHT = 371
 
--- ─── GUI ───────────────────────────────────────────────────────
 if CoreGui:FindFirstChild("KMoneyHub") then
     CoreGui:FindFirstChild("KMoneyHub"):Destroy()
 end
@@ -377,7 +369,6 @@ Content.BackgroundTransparency = 1
 
 local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad)
 
--- ─── TOGGLE ROW HELPER ─────────────────────────────────────────
 local function makeToggleRow(labelText, yOffset)
     local Row = Instance.new("Frame", Content)
     Row.Size                 = UDim2.new(1, -24, 0, 46)
@@ -424,7 +415,6 @@ local function applyOff(b,k,s,rs)
     k.BackgroundColor3 = WHITE
 end
 
--- ROW 1: Auto Steal
 local T1,K1,S1,RS1 = makeToggleRow("Auto Steal", 10)
 if savedCfg.AutoSteal then stealEnabled=true; startAutoSteal(); applyOn(T1,K1,S1,RS1) end
 T1.MouseButton1Click:Connect(function()
@@ -438,7 +428,6 @@ T1.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 2: Anti Ragdoll
 local T2,K2,S2,RS2 = makeToggleRow("Anti Ragdoll", 66)
 if savedCfg.AntiRagdoll then antiRagdollEnabled=true; task.delay(1,function() setupAntiRagdoll(character) end); applyOn(T2,K2,S2,RS2) end
 T2.MouseButton1Click:Connect(function()
@@ -452,7 +441,6 @@ T2.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 3: XRAY
 local T3,K3,S3,RS3 = makeToggleRow("XRAY", 122)
 if savedCfg.XRAY then unwalkEnabled=true; startUnwalk(); applyOn(T3,K3,S3,RS3) end
 T3.MouseButton1Click:Connect(function()
@@ -466,7 +454,6 @@ T3.MouseButton1Click:Connect(function()
     end
 end)
 
--- ROW 4: Dark Mode
 local T4,K4,S4,RS4 = makeToggleRow("Dark Mode", 178)
 if savedCfg.Darkmode then darkmodeEnabled=true; startDarkmode(); applyOn(T4,K4,S4,RS4) end
 T4.MouseButton1Click:Connect(function()
@@ -480,14 +467,12 @@ T4.MouseButton1Click:Connect(function()
     end
 end)
 
--- ─── SEPARATOR ─────────────────────────────────────────────────
 local Sep = Instance.new("Frame", Content)
 Sep.Size             = UDim2.new(1, -24, 0, 1)
 Sep.Position         = UDim2.new(0, 12, 0, 244)
 Sep.BackgroundColor3 = WHITE
 Sep.BorderSizePixel  = 0
 
--- ─── SAVE BUTTON ───────────────────────────────────────────────
 local SaveFrame = Instance.new("Frame", Content)
 SaveFrame.Size               = UDim2.new(1, -24, 0, 40)
 SaveFrame.Position           = UDim2.new(0, 12, 0, 256)
@@ -514,7 +499,6 @@ SaveBtn.MouseButton1Click:Connect(function()
     SaveBtn.Text = "SAVE CONFIG"
 end)
 
--- ─── DRAGGABLE ─────────────────────────────────────────────────
 do
     local dragging, dragStart, startPos = false, nil, nil
     TitleBar.InputBegan:Connect(function(inp)
@@ -533,7 +517,6 @@ do
     end)
 end
 
--- ─── MINIMIZAR ─────────────────────────────────────────────────
 local minimized = false
 MinBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
@@ -543,7 +526,6 @@ MinBtn.MouseButton1Click:Connect(function()
     }):Play()
 end)
 
--- ─── NEON PULSE ────────────────────────────────────────────────
 task.spawn(function()
     local t = 0
     while ScreenGui.Parent do
@@ -554,6 +536,5 @@ task.spawn(function()
     end
 end)
 
--- ─── OPEN ANIMATION ────────────────────────────────────────────
 Main.Size = UDim2.new(0,0,0,0)
 TweenService:Create(Main, TweenInfo.new(0.4,Enum.EasingStyle.Back,Enum.EasingDirection.Out), {Size=UDim2.new(0,270,0,FULL_HEIGHT)}):Play()
