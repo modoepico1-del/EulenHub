@@ -214,8 +214,8 @@ local autoStealActive        = false
 local unwalkOn               = false
 local espOn                  = false
 local unwalkConn             = nil
-local AUTO_STEAL_PROX_RADIUS = 7
-local STEAL_DURATION         = 0.2
+local AUTO_STEAL_PROX_RADIUS = 20   -- cambiado de 7 a 20
+local STEAL_DURATION         = 0.35 -- cambiado de 0.2 a 0.35
 
 local darkOn           = false
 local galaxyOn         = false
@@ -541,6 +541,106 @@ B5.InputBegan:Connect(function(inp)
     end
 end)
 
+-- ============================================================
+-- BARRA DE PROGRESO CENTRAL (abajo, estilo foto)
+-- ============================================================
+local BottomBar = Instance.new("Frame")
+BottomBar.Name                 = "BottomBar"
+BottomBar.Size                 = UDim2.new(0, 320, 0, 36)
+BottomBar.Position             = UDim2.new(0.5, -160, 1, -70)
+BottomBar.BackgroundColor3     = Color3.fromRGB(15, 15, 20)
+BottomBar.BackgroundTransparency = 0.15
+BottomBar.BorderSizePixel      = 0
+BottomBar.Visible              = false
+BottomBar.ZIndex               = 30
+BottomBar.Parent               = ScreenGui
+Instance.new("UICorner", BottomBar).CornerRadius = UDim.new(0, 8)
+local BottomBarStroke = Instance.new("UIStroke", BottomBar)
+BottomBarStroke.Color = Color3.fromRGB(60, 60, 70); BottomBarStroke.Thickness = 1; BottomBarStroke.Transparency = 0.3
+
+-- Fill de la barra
+local BottomFill = Instance.new("Frame")
+BottomFill.Size             = UDim2.new(0, 0, 1, 0)
+BottomFill.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
+BottomFill.BorderSizePixel  = 0
+BottomFill.ZIndex           = 31
+BottomFill.Parent           = BottomBar
+Instance.new("UICorner", BottomFill).CornerRadius = UDim.new(0, 8)
+
+-- Label izquierdo: porcentaje
+local PctLabel = Instance.new("TextLabel")
+PctLabel.Size                   = UDim2.new(0.5, 0, 1, 0)
+PctLabel.Position               = UDim2.new(0, 10, 0, 0)
+PctLabel.BackgroundTransparency = 1
+PctLabel.Text                   = "0%"
+PctLabel.TextColor3             = White
+PctLabel.Font                   = Enum.Font.GothamBold
+PctLabel.TextSize               = 13
+PctLabel.TextXAlignment         = Enum.TextXAlignment.Left
+PctLabel.ZIndex                 = 32
+PctLabel.Parent                 = BottomBar
+
+-- Label derecho: Radius con botones
+local RadiusLabel = Instance.new("TextLabel")
+RadiusLabel.Size                   = UDim2.new(0, 70, 1, 0)
+RadiusLabel.Position               = UDim2.new(1, -130, 0, 0)
+RadiusLabel.BackgroundTransparency = 1
+RadiusLabel.Text                   = "Radius: "..AUTO_STEAL_PROX_RADIUS
+RadiusLabel.TextColor3             = White
+RadiusLabel.Font                   = Enum.Font.GothamBold
+RadiusLabel.TextSize               = 13
+RadiusLabel.TextXAlignment         = Enum.TextXAlignment.Right
+RadiusLabel.ZIndex                 = 32
+RadiusLabel.Parent                 = BottomBar
+
+local function updateRadiusLabel()
+    RadiusLabel.Text = "Radius: "..AUTO_STEAL_PROX_RADIUS
+    if stealCirclePart then
+        stealCirclePart.Size = Vector3.new(0.15, AUTO_STEAL_PROX_RADIUS*2, AUTO_STEAL_PROX_RADIUS*2)
+    end
+end
+
+-- Botón − radio
+local RadMinusBtn = Instance.new("TextButton")
+RadMinusBtn.Size                   = UDim2.new(0, 20, 0, 20)
+RadMinusBtn.Position               = UDim2.new(1, -56, 0.5, -10)
+RadMinusBtn.BackgroundColor3       = IndigoMid
+RadMinusBtn.BackgroundTransparency = 0.2
+RadMinusBtn.Text                   = "−"
+RadMinusBtn.TextColor3             = White
+RadMinusBtn.Font                   = Enum.Font.GothamBold
+RadMinusBtn.TextSize               = 13
+RadMinusBtn.BorderSizePixel        = 0
+RadMinusBtn.ZIndex                 = 33
+RadMinusBtn.Parent                 = BottomBar
+Instance.new("UICorner", RadMinusBtn).CornerRadius = UDim.new(0, 5)
+
+-- Botón + radio
+local RadPlusBtn = Instance.new("TextButton")
+RadPlusBtn.Size                   = UDim2.new(0, 20, 0, 20)
+RadPlusBtn.Position               = UDim2.new(1, -32, 0.5, -10)
+RadPlusBtn.BackgroundColor3       = IndigoMid
+RadPlusBtn.BackgroundTransparency = 0.2
+RadPlusBtn.Text                   = "+"
+RadPlusBtn.TextColor3             = White
+RadPlusBtn.Font                   = Enum.Font.GothamBold
+RadPlusBtn.TextSize               = 13
+RadPlusBtn.BorderSizePixel        = 0
+RadPlusBtn.ZIndex                 = 33
+RadPlusBtn.Parent                 = BottomBar
+Instance.new("UICorner", RadPlusBtn).CornerRadius = UDim.new(0, 5)
+
+RadMinusBtn.MouseButton1Click:Connect(function()
+    AUTO_STEAL_PROX_RADIUS = math.max(1, AUTO_STEAL_PROX_RADIUS - 1)
+    updateRadiusLabel()
+end)
+RadPlusBtn.MouseButton1Click:Connect(function()
+    AUTO_STEAL_PROX_RADIUS = AUTO_STEAL_PROX_RADIUS + 1
+    updateRadiusLabel()
+end)
+
+-- ============================================================
+
 local function applyDarkState()
     if darkOn then
         enableOptimizer(); enableDarkMode()
@@ -780,49 +880,27 @@ B7.MouseButton1Click:Connect(function()
     end
 end)
 
+-- (barra vieja del hub eliminada, reemplazada por BottomBar central)
 local progressBarBg = Instance.new("Frame")
-progressBarBg.Size                   = UDim2.new(1, -16, 0, 5)
-progressBarBg.Position               = UDim2.new(0, 8, 1, -(SAVE_H + PAD_BOT + 8))
-progressBarBg.BackgroundColor3       = NavyDark
-progressBarBg.BackgroundTransparency = 0.15
-progressBarBg.Visible                = false
-progressBarBg.ZIndex                 = 10
-progressBarBg.Parent                 = Main
-Instance.new("UICorner", progressBarBg).CornerRadius = UDim.new(0, 4)
-local pbStroke = Instance.new("UIStroke", progressBarBg)
-pbStroke.Color = IndigoMid; pbStroke.Thickness = 1; pbStroke.Transparency = 0.4
-
-local progressFill = Instance.new("Frame")
-progressFill.Size             = UDim2.new(0, 0, 1, 0)
-progressFill.BackgroundColor3 = KnobOn
-progressFill.BorderSizePixel  = 0
-progressFill.ZIndex           = 11
-progressFill.Parent           = progressBarBg
-Instance.new("UICorner", progressFill).CornerRadius = UDim.new(0, 4)
-
-local percentLabel = Instance.new("TextLabel")
-percentLabel.Size                   = UDim2.new(1, 0, 1, 0)
-percentLabel.BackgroundTransparency = 1
-percentLabel.Font                   = Enum.Font.GothamBold
-percentLabel.TextSize               = 6
-percentLabel.TextColor3             = White
-percentLabel.Text                   = "0%"
-percentLabel.ZIndex                 = 12
-percentLabel.Parent                 = progressBarBg
+progressBarBg.Size = UDim2.new(0,0,0,0)
+progressBarBg.Visible = false
+progressBarBg.Parent = Main
+local progressFill = Instance.new("Frame"); progressFill.Parent = progressBarBg
+local percentLabel = Instance.new("TextLabel"); percentLabel.Parent = progressBarBg
 
 local function animateProgressBar()
     task.spawn(function()
-        progressFill.Size = UDim2.new(0, 0, 1, 0); percentLabel.Text = "0%"
-        local steps = 10
+        BottomFill.Size = UDim2.new(0, 0, 1, 0); PctLabel.Text = "0%"
+        local steps    = 20
         local stepWait = STEAL_DURATION / steps
         for i = 1, steps do
             local pct = i/steps
-            progressFill.Size = UDim2.new(pct, 0, 1, 0)
-            percentLabel.Text = math.floor(pct*100).."%"
+            BottomFill.Size = UDim2.new(pct, 0, 1, 0)
+            PctLabel.Text   = math.floor(pct*100).."%"
             task.wait(stepWait)
         end
         task.wait(0.2)
-        progressFill.Size = UDim2.new(0,0,1,0); percentLabel.Text = "0%"
+        BottomFill.Size = UDim2.new(0,0,1,0); PctLabel.Text = "0%"
     end)
 end
 
@@ -1003,15 +1081,16 @@ local function enableAutoSteal()
     autoSteal_initScanner()
     startAutoStealLoop()
     showStealCircle(AUTO_STEAL_PROX_RADIUS)
-    progressBarBg.Visible = true
+    BottomBar.Visible = true
+    updateRadiusLabel()
 end
 local function disableAutoSteal()
     autoStealActive = false
     stopAutoStealLoop()
     hideStealCircle()
-    progressBarBg.Visible = false
-    progressFill.Size = UDim2.new(0,0,1,0)
-    percentLabel.Text = "0%"
+    BottomBar.Visible = false
+    BottomFill.Size = UDim2.new(0,0,1,0)
+    PctLabel.Text = "0%"
 end
 
 local function applyAutoStealState()
