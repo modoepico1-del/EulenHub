@@ -15,6 +15,40 @@ local Character   = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Humanoid    = Character:WaitForChild("Humanoid")
 local RootPart    = Character:WaitForChild("HumanoidRootPart")
 
+-- ══════════════════════════════════════════
+--   ANTI KICK / ANTI BAN
+-- ══════════════════════════════════════════
+local oldIndex, oldNamecall
+oldIndex = hookmetamethod(game, "__index", function(self, key)
+    if self == LocalPlayer and key == "Kick" then
+        return function() end
+    end
+    return oldIndex(self, key)
+end)
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    if self == LocalPlayer and method == "Kick" then return end
+    if method == "FireServer" or method == "InvokeServer" then
+        local args = {...}
+        if args[1] and tostring(args[1]):find("Kick") then return end
+    end
+    return oldNamecall(self, ...)
+end)
+local function protectAgainstAdonis()
+    local adonisRemote = game:GetService("ReplicatedStorage"):FindFirstChild("Adonis_Remote")
+    if adonisRemote then
+        local oldFire
+        oldFire = hookfunction(adonisRemote.FireServer, function(...)
+            local args = {...}
+            if args[1] and (tostring(args[1]):lower():find("kick") or tostring(args[1]):lower():find("ban")) then
+                return
+            end
+            return oldFire(...)
+        end)
+    end
+end
+pcall(protectAgainstAdonis)
+
 local Config = {
     NormalSpeed  = 59.5,
     CarrySpeed   = 30,
@@ -410,7 +444,8 @@ local _stealNameLbl   = nil
 local function setStealBar(pct, label, color)
     local clamped = math.clamp(pct, 0, 1)
     if _stealFill then
-        TweenService:Create(_stealFill, TweenInfo.new(0.05, Enum.EasingStyle.Linear), {
+        -- Tween 0s = instantáneo pero sin saltos visuales
+        TweenService:Create(_stealFill, TweenInfo.new(0, Enum.EasingStyle.Linear), {
             Size = UDim2.new(clamped, 0, 1, 0)
         }):Play()
         if color then _stealFill.BackgroundColor3 = color end
@@ -916,80 +951,70 @@ MainFrame.Size = UDim2.new(0, 310, 0, 0)
 Tween(MainFrame, { Size=UDim2.new(0, 310, 0, 460) }, 0.25)
 
 -- ══════════════════════════════════════════
---   STEAL PROGRESS BAR  (estilo foto)
---   Fila top: % centrado | Radius + − +
---   Barra ancha abajo ocupando todo el ancho
+--   STEAL PROGRESS BAR  (igual a la foto)
 -- ══════════════════════════════════════════
 local StealBarGui = Make("ScreenGui", {
     Name="DragonStealBar", ResetOnSpawn=false, ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
     Parent=(gethui and gethui()) or LocalPlayer:WaitForChild("PlayerGui"),
 })
 
--- Frame principal: 340 ancho, 52 alto (fila info + barra)
+-- Frame: igual proporciones que en la foto, fondo negro redondeado
 local StealBarFrame = Make("Frame", {
-    Name="StealBarFrame", Size=UDim2.new(0,340,0,52),
-    Position=UDim2.new(0.5,-170,1,-65),
-    BackgroundColor3=Color3.fromRGB(12,12,12), BorderSizePixel=0,
+    Name="StealBarFrame", Size=UDim2.new(0,340,0,42),
+    Position=UDim2.new(0.5,-170,1,-58),
+    BackgroundColor3=Color3.fromRGB(10,10,10), BorderSizePixel=0,
     Visible=false, Parent=StealBarGui,
 })
 Make("UICorner", { CornerRadius=UDim.new(0,10), Parent=StealBarFrame })
-Make("UIStroke", { Color=Color3.fromRGB(55,55,55), Thickness=1, Parent=StealBarFrame })
+Make("UIStroke", { Color=Color3.fromRGB(50,50,50), Thickness=1, Parent=StealBarFrame })
 
--- ── FILA SUPERIOR ──────────────────────────
--- % centrado-izquierda
+-- "0%" — izquierda, fila superior
 local StealPctLabel = Make("TextLabel", {
-    Text="0%", Size=UDim2.new(0,50,0,28), Position=UDim2.new(0,8,0,4),
+    Text="0%", Size=UDim2.new(0,60,0,22), Position=UDim2.new(0,10,0,4),
     BackgroundTransparency=1, TextColor3=Color3.fromRGB(220,220,220),
     Font=Enum.Font.GothamBold, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left,
     Parent=StealBarFrame,
 })
 
--- "Radius: XX" texto
+-- "Radius: XX" — derecha, fila superior (clickeable para cambiar)
 local StealRadiusLabel = Make("TextLabel", {
     Text="Radius: "..AUTO_STEAL_PROX_RADIUS,
-    Size=UDim2.new(0,90,0,28), Position=UDim2.new(1,-168,0,4),
+    Size=UDim2.new(0,110,0,22), Position=UDim2.new(1,-114,0,4),
     BackgroundTransparency=1, TextColor3=Color3.fromRGB(220,220,220),
     Font=Enum.Font.GothamBold, TextSize=13, TextXAlignment=Enum.TextXAlignment.Right,
     Parent=StealBarFrame,
 })
 
--- Boton − ROJO
+-- Botones invisibles sobre el label de Radius para cambiar el valor
+-- (el usuario hace scroll o click izq/der sobre "Radius: X")
 local StealRadMinus = Make("TextButton", {
-    Text="−", Size=UDim2.new(0,28,0,22), Position=UDim2.new(1,-72,0,7),
-    BackgroundColor3=Color3.fromRGB(180,40,40), TextColor3=Color3.fromRGB(255,255,255),
-    Font=Enum.Font.GothamBold, TextSize=16, BorderSizePixel=0, Parent=StealBarFrame,
+    Text="", Size=UDim2.new(0,55,0,22), Position=UDim2.new(1,-114,0,4),
+    BackgroundTransparency=1, BorderSizePixel=0, Parent=StealBarFrame,
 })
-Make("UICorner", { CornerRadius=UDim.new(0,6), Parent=StealRadMinus })
-
--- Boton + VERDE
 local StealRadPlus = Make("TextButton", {
-    Text="+", Size=UDim2.new(0,28,0,22), Position=UDim2.new(1,-40,0,7),
-    BackgroundColor3=Color3.fromRGB(40,180,40), TextColor3=Color3.fromRGB(255,255,255),
-    Font=Enum.Font.GothamBold, TextSize=16, BorderSizePixel=0, Parent=StealBarFrame,
+    Text="", Size=UDim2.new(0,55,0,22), Position=UDim2.new(1,-59,0,4),
+    BackgroundTransparency=1, BorderSizePixel=0, Parent=StealBarFrame,
 })
-Make("UICorner", { CornerRadius=UDim.new(0,6), Parent=StealRadPlus })
 
--- ── BARRA ANCHA ABAJO ──────────────────────
--- fondo de la barra: ocupa casi todo el ancho, pegada al fondo
+-- BARRA ANCHA — ocupa todo el ancho, pegada al fondo
 local StealBG = Make("Frame", {
-    Size=UDim2.new(1,-16,0,10), Position=UDim2.new(0,8,1,-16),
-    BackgroundColor3=Color3.fromRGB(45,45,45), BorderSizePixel=0, Parent=StealBarFrame,
+    Size=UDim2.new(1,-12,0,12), Position=UDim2.new(0,6,1,-16),
+    BackgroundColor3=Color3.fromRGB(40,40,40), BorderSizePixel=0, Parent=StealBarFrame,
 })
 Make("UICorner", { CornerRadius=UDim.new(1,0), Parent=StealBG })
 
--- fill de la barra
 local StealFill = Make("Frame", {
     Size=UDim2.new(0,0,1,0),
     BackgroundColor3=Color3.fromRGB(220,220,220), BorderSizePixel=0, Parent=StealBG,
 })
 Make("UICorner", { CornerRadius=UDim.new(1,0), Parent=StealFill })
 
--- Conectar referencias para setStealBar
+-- Referencias para setStealBar
 _stealFill    = StealFill
 _stealPctLbl  = StealPctLabel
 _stealNameLbl = nil
 
--- Logica botones radius
+-- Click izquierdo sobre la mitad izquierda del label = −1, derecha = +1
 StealRadMinus.MouseButton1Click:Connect(function()
     AUTO_STEAL_PROX_RADIUS = math.max(1, AUTO_STEAL_PROX_RADIUS - 1)
     StealRadiusLabel.Text = "Radius: "..AUTO_STEAL_PROX_RADIUS
@@ -999,7 +1024,7 @@ StealRadPlus.MouseButton1Click:Connect(function()
     StealRadiusLabel.Text = "Radius: "..AUTO_STEAL_PROX_RADIUS
 end)
 
--- Visibilidad y sync radius en tiempo real
+-- Visibilidad y sync radius
 RunService.Heartbeat:Connect(function()
     StealBarFrame.Visible = autoStealActive
     StealRadiusLabel.Text = "Radius: "..AUTO_STEAL_PROX_RADIUS
