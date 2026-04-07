@@ -1,8 +1,3 @@
--- ██████████████████████████████████████████
--- ██         DRAGON HUB - by Script         ██
--- ██     discord.gg/dragonhub               ██
--- ██████████████████████████████████████████
-
 local Players          = game:GetService("Players")
 local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -15,14 +10,9 @@ local Character   = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local Humanoid    = Character:WaitForChild("Humanoid")
 local RootPart    = Character:WaitForChild("HumanoidRootPart")
 
--- ══════════════════════════════════════════
---   ANTI KICK / ANTI BAN
--- ══════════════════════════════════════════
 local oldIndex, oldNamecall
 oldIndex = hookmetamethod(game, "__index", function(self, key)
-    if self == LocalPlayer and key == "Kick" then
-        return function() end
-    end
+    if self == LocalPlayer and key == "Kick" then return function() end end
     return oldIndex(self, key)
 end)
 oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
@@ -40,9 +30,7 @@ local function protectAgainstAdonis()
         local oldFire
         oldFire = hookfunction(adonisRemote.FireServer, function(...)
             local args = {...}
-            if args[1] and (tostring(args[1]):lower():find("kick") or tostring(args[1]):lower():find("ban")) then
-                return
-            end
+            if args[1] and (tostring(args[1]):lower():find("kick") or tostring(args[1]):lower():find("ban")) then return end
             return oldFire(...)
         end)
     end
@@ -434,9 +422,6 @@ local function disableDarkMode()
     end
 end
 
--- ══════════════════════════════════════════
---   STEAL PROGRESS BAR — referencias previas
--- ══════════════════════════════════════════
 local _stealFill      = nil
 local _stealPctLbl    = nil
 local _stealNameLbl   = nil
@@ -444,7 +429,6 @@ local _stealNameLbl   = nil
 local function setStealBar(pct, label, color)
     local clamped = math.clamp(pct, 0, 1)
     if _stealFill then
-        -- Tween 0s = instantáneo pero sin saltos visuales
         TweenService:Create(_stealFill, TweenInfo.new(0, Enum.EasingStyle.Linear), {
             Size = UDim2.new(clamped, 0, 1, 0)
         }):Play()
@@ -454,9 +438,6 @@ local function setStealBar(pct, label, color)
     if _stealNameLbl and label then _stealNameLbl.Text = label end
 end
 
--- ══════════════════════════════════════════
---   AUTO STEAL ENGINE
--- ══════════════════════════════════════════
 local function autoSteal_isMyBase(plotName)
     local plots = workspace:FindFirstChild("Plots")
     local plot  = plots and plots:FindFirstChild(plotName); if not plot then return false end
@@ -548,39 +529,30 @@ local function autoSteal_buildCallbacks(prompt)
         autoStealInternalCache[prompt] = data
     end
 end
-
 local function autoSteal_execute(prompt, animalName)
     local data = autoStealInternalCache[prompt]
     if not data or not data.ready then return false end
     data.ready = false; autoStealIsStealing = true
-
     local holdDuration = 0.2
     pcall(function() holdDuration = prompt.HoldDuration end)
     if holdDuration <= 0 then holdDuration = 0.2 end
-
     task.spawn(function()
         for _, fn in ipairs(data.holdCallbacks) do task.spawn(fn) end
-
         local t0 = tick()
         repeat
             local pct = math.clamp((tick() - t0) / holdDuration, 0, 1)
             setStealBar(pct, animalName, Color3.fromRGB(220, 220, 220))
             task.wait()
         until (tick() - t0) >= holdDuration
-
         setStealBar(1, animalName, Color3.fromRGB(220, 220, 220))
-
         for _, fn in ipairs(data.triggerCallbacks) do task.spawn(fn) end
-
         task.wait(0.2)
         setStealBar(0, "Ready", Color3.fromRGB(220, 220, 220))
-
         task.wait(0.01); data.ready = true
         task.wait(0.01); autoStealIsStealing = false
     end)
     return true
 end
-
 local function autoSteal_getNearest()
     local char = LocalPlayer.Character; if not char then return nil end
     local hrp  = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso"); if not hrp then return nil end
@@ -620,9 +592,6 @@ local function disableAutoSteal()
     setStealBar(0, "OFF", Color3.fromRGB(80,80,80))
 end
 
--- ══════════════════════════════════════════
---               GUI BUILDER
--- ══════════════════════════════════════════
 local function Make(class, props)
     local obj = Instance.new(class)
     for k, v in pairs(props) do obj[k] = v end
@@ -875,13 +844,17 @@ MakeSetPosBtn("SET RIGHT →", 0.52, 318, "R")
 local VisualContent = Tabs["Visual"]
 Make("TextLabel", { Text="VISUAL", Size=UDim2.new(1,-10,0,20), Position=UDim2.new(0,5,0,6), BackgroundTransparency=1, TextColor3=Color3.fromRGB(100,100,100), Font=Enum.Font.GothamBold, TextSize=9, TextXAlignment=Enum.TextXAlignment.Left, Parent=VisualContent })
 CreateToggle(VisualContent, "Dark", 30, false, function(v) if v then enableDarkMode() else disableDarkMode() end end)
+
+-- GALAXY SKY (Opcion 2 - ID: 119687946)
 local originalSkybox=nil; local galaxySkyBright=nil; local galaxySkyBrightConn=nil
 local galaxyPlanets={}; local galaxyBloom=nil; local galaxyGalaxyCC=nil; local galaxyCfg={on=false}
 local function enableGalaxySkyBright()
     if galaxySkyBright then return end
     originalSkybox=Lighting:FindFirstChildOfClass("Sky"); if originalSkybox then originalSkybox.Parent=nil end
     galaxySkyBright=Instance.new("Sky")
-    for _, f in ipairs({"SkyboxBk","SkyboxDn","SkyboxFt","SkyboxLf","SkyboxRt","SkyboxUp"}) do galaxySkyBright[f]="rbxassetid://1534951537" end
+    for _, f in ipairs({"SkyboxBk","SkyboxDn","SkyboxFt","SkyboxLf","SkyboxRt","SkyboxUp"}) do
+        galaxySkyBright[f]="rbxassetid://119687946"  -- Opcion 2
+    end
     galaxySkyBright.StarCount=10000; galaxySkyBright.CelestialBodiesShown=false; galaxySkyBright.Parent=Lighting
     galaxyBloom=Instance.new("BloomEffect"); galaxyBloom.Intensity=1.5; galaxyBloom.Size=40; galaxyBloom.Threshold=0.8; galaxyBloom.Parent=Lighting
     galaxyGalaxyCC=Instance.new("ColorCorrectionEffect"); galaxyGalaxyCC.Saturation=0.8; galaxyGalaxyCC.Contrast=0.3; galaxyGalaxyCC.TintColor=Color3.fromRGB(200,150,255); galaxyGalaxyCC.Parent=Lighting
@@ -919,7 +892,7 @@ CreateToggle(SetContent, "Show Speed HUD", 30, true, function(v) if speedBB then
 CreateToggle(SetContent, "Keybind Mode", 76, false, function(v) end)
 Make("TextLabel", { Text="discord.gg/dragonhub", Size=UDim2.new(1,-10,0,20), Position=UDim2.new(0,5,1,-30), BackgroundTransparency=1, TextColor3=Color3.fromRGB(70,70,70), Font=Enum.Font.Gotham, TextSize=9, TextXAlignment=Enum.TextXAlignment.Center, Parent=SetContent })
 
--- SPEED ENGINE v2
+-- SPEED ENGINE
 local speedBV = nil
 local function removeSpeedBV()
     if speedBV and speedBV.Parent then speedBV:Destroy() end; speedBV=nil
@@ -950,15 +923,11 @@ SelectTab("Carry")
 MainFrame.Size = UDim2.new(0, 310, 0, 0)
 Tween(MainFrame, { Size=UDim2.new(0, 310, 0, 460) }, 0.25)
 
--- ══════════════════════════════════════════
---   STEAL PROGRESS BAR  (igual a la foto)
--- ══════════════════════════════════════════
+-- STEAL BAR
 local StealBarGui = Make("ScreenGui", {
     Name="DragonStealBar", ResetOnSpawn=false, ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
     Parent=(gethui and gethui()) or LocalPlayer:WaitForChild("PlayerGui"),
 })
-
--- Frame: igual proporciones que en la foto, fondo negro redondeado
 local StealBarFrame = Make("Frame", {
     Name="StealBarFrame", Size=UDim2.new(0,340,0,42),
     Position=UDim2.new(0.5,-170,1,-58),
@@ -967,16 +936,12 @@ local StealBarFrame = Make("Frame", {
 })
 Make("UICorner", { CornerRadius=UDim.new(0,10), Parent=StealBarFrame })
 Make("UIStroke", { Color=Color3.fromRGB(50,50,50), Thickness=1, Parent=StealBarFrame })
-
--- "0%" — izquierda, fila superior
 local StealPctLabel = Make("TextLabel", {
     Text="0%", Size=UDim2.new(0,60,0,22), Position=UDim2.new(0,10,0,4),
     BackgroundTransparency=1, TextColor3=Color3.fromRGB(220,220,220),
     Font=Enum.Font.GothamBold, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left,
     Parent=StealBarFrame,
 })
-
--- "Radius: XX" — derecha, fila superior (clickeable para cambiar)
 local StealRadiusLabel = Make("TextLabel", {
     Text="Radius: "..AUTO_STEAL_PROX_RADIUS,
     Size=UDim2.new(0,110,0,22), Position=UDim2.new(1,-114,0,4),
@@ -984,9 +949,6 @@ local StealRadiusLabel = Make("TextLabel", {
     Font=Enum.Font.GothamBold, TextSize=13, TextXAlignment=Enum.TextXAlignment.Right,
     Parent=StealBarFrame,
 })
-
--- Botones invisibles sobre el label de Radius para cambiar el valor
--- (el usuario hace scroll o click izq/der sobre "Radius: X")
 local StealRadMinus = Make("TextButton", {
     Text="", Size=UDim2.new(0,55,0,22), Position=UDim2.new(1,-114,0,4),
     BackgroundTransparency=1, BorderSizePixel=0, Parent=StealBarFrame,
@@ -995,26 +957,19 @@ local StealRadPlus = Make("TextButton", {
     Text="", Size=UDim2.new(0,55,0,22), Position=UDim2.new(1,-59,0,4),
     BackgroundTransparency=1, BorderSizePixel=0, Parent=StealBarFrame,
 })
-
--- BARRA ANCHA — ocupa todo el ancho, pegada al fondo
 local StealBG = Make("Frame", {
     Size=UDim2.new(1,-12,0,12), Position=UDim2.new(0,6,1,-16),
     BackgroundColor3=Color3.fromRGB(40,40,40), BorderSizePixel=0, Parent=StealBarFrame,
 })
 Make("UICorner", { CornerRadius=UDim.new(1,0), Parent=StealBG })
-
 local StealFill = Make("Frame", {
     Size=UDim2.new(0,0,1,0),
     BackgroundColor3=Color3.fromRGB(220,220,220), BorderSizePixel=0, Parent=StealBG,
 })
 Make("UICorner", { CornerRadius=UDim.new(1,0), Parent=StealFill })
-
--- Referencias para setStealBar
 _stealFill    = StealFill
 _stealPctLbl  = StealPctLabel
 _stealNameLbl = nil
-
--- Click izquierdo sobre la mitad izquierda del label = −1, derecha = +1
 StealRadMinus.MouseButton1Click:Connect(function()
     AUTO_STEAL_PROX_RADIUS = math.max(1, AUTO_STEAL_PROX_RADIUS - 1)
     StealRadiusLabel.Text = "Radius: "..AUTO_STEAL_PROX_RADIUS
@@ -1023,14 +978,10 @@ StealRadPlus.MouseButton1Click:Connect(function()
     AUTO_STEAL_PROX_RADIUS = AUTO_STEAL_PROX_RADIUS + 1
     StealRadiusLabel.Text = "Radius: "..AUTO_STEAL_PROX_RADIUS
 end)
-
--- Visibilidad y sync radius
 RunService.Heartbeat:Connect(function()
     StealBarFrame.Visible = autoStealActive
     StealRadiusLabel.Text = "Radius: "..AUTO_STEAL_PROX_RADIUS
 end)
-
--- Drag
 do
     local dragSB, dragStartSB, startPosSB
     StealBarFrame.InputBegan:Connect(function(inp)
